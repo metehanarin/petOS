@@ -66,21 +66,26 @@ build_bundle() {
   local app_binary="$macos_dir/$PRODUCT_NAME"
   local fingerprint_file="$resources_dir/.petnative-resource-fingerprint"
 
-  bundle_log "building $PRODUCT_NAME ($config)"
-  (cd "$REPO_ROOT" && swift build -c "$config" --product "$PRODUCT_NAME")
-
   local bin_path
   bin_path="$(cd "$REPO_ROOT" && swift build -c "$config" --show-bin-path)"
+
+  local rebuild_inner_only=false
+  if [[ "$mode" == "--inner-only" && -f "$info_plist" ]]; then
+    rebuild_inner_only=true
+  fi
+
+  local processed_bundle="$bin_path/$resource_bundle_name"
+  if [[ "$rebuild_inner_only" == false ]]; then
+    rm -rf "$processed_bundle"
+  fi
+
+  bundle_log "building $PRODUCT_NAME ($config)"
+  (cd "$REPO_ROOT" && swift build -c "$config" --product "$PRODUCT_NAME")
 
   local built_binary="$bin_path/$PRODUCT_NAME"
   if [[ ! -x "$built_binary" ]]; then
     echo "[bundle] error: built binary is not executable: $built_binary" >&2
     return 1
-  fi
-
-  local rebuild_inner_only=false
-  if [[ "$mode" == "--inner-only" && -f "$info_plist" ]]; then
-    rebuild_inner_only=true
   fi
 
   bundle_log "assembling $bundle_dir"
@@ -94,7 +99,6 @@ build_bundle() {
 
     cp "$source_info_plist" "$info_plist"
 
-    local processed_bundle="$bin_path/$resource_bundle_name"
     local processed_resources="$processed_bundle/Contents/Resources"
 
     rm -rf "$resources_dir" "$bundle_dir/$resource_bundle_name"
