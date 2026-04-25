@@ -1,4 +1,5 @@
 import Foundation
+import os
 import SwiftUI
 
 struct PetDebugSnapshot: Codable {
@@ -29,6 +30,7 @@ final class PetAppModel: ObservableObject {
     private let persistence: PetPersistence
     private let windowManager: PetWindowManager
     private let notificationAlertWindow: TimeInterval
+    private let moodLog = Logger(subsystem: "com.petnative.focus", category: "mood")
     private lazy var monitorCoordinator = PetMonitorCoordinator(model: self, persistence: persistence)
     private var notificationClearTask: Task<Void, Never>?
     private var debugLogTask: Task<Void, Never>?
@@ -55,7 +57,9 @@ final class PetAppModel: ObservableObject {
         let preferences = snapshot.preferences
         let worldState = WorldState.default
         self.worldState = worldState
-        currentMood = PetMoodEngine.resolveBaseMood(for: worldState)
+        let resolution = PetMoodEngine.resolveBaseMoodWithReason(for: worldState)
+        currentMood = resolution.mood
+        moodLog.debug("mood.resolved mood=\(resolution.mood.rawValue, privacy: .public) reason=\(resolution.reason.rawValue, privacy: .public)")
         age = snapshot.age
         soundEnabled = preferences.soundEnabled
         swipeMeowEnabled = preferences.swipeMeowEnabled
@@ -268,7 +272,14 @@ final class PetAppModel: ObservableObject {
     }
 
     private func recomputeMood() {
-        currentMood = debugMoodOverride ?? PetMoodEngine.resolveBaseMood(for: worldState)
+        if let override = debugMoodOverride {
+            currentMood = override
+            moodLog.debug("mood.resolved mood=\(override.rawValue, privacy: .public) reason=debug_override")
+        } else {
+            let resolution = PetMoodEngine.resolveBaseMoodWithReason(for: worldState)
+            currentMood = resolution.mood
+            moodLog.debug("mood.resolved mood=\(resolution.mood.rawValue, privacy: .public) reason=\(resolution.reason.rawValue, privacy: .public)")
+        }
     }
 
     private func startReactionServer() {
