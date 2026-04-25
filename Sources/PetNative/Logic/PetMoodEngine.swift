@@ -188,6 +188,29 @@ enum PetMoodEngine {
         "fleet"
     ]
 
+    private static let nonSleepFocusIdentifiers: Set<String> = [
+        "com.apple.focus.work",
+        "com.apple.focus.personal",
+        "com.apple.focus.gaming",
+        "com.apple.focus.fitness",
+        "com.apple.focus.mindfulness",
+        "com.apple.focus.driving",
+        "com.apple.donotdisturb.mode.driving",
+        "com.apple.focus.reading",
+        "com.apple.donotdisturb"
+    ]
+
+    private static let nonSleepFocusNames: Set<String> = [
+        "work", "working",
+        "personal",
+        "gaming",
+        "fitness",
+        "mindfulness",
+        "driving",
+        "reading",
+        "do not disturb", "dnd"
+    ]
+
     static func reactionVariant(for event: PetEvent) -> ReactionVariant {
         let reactionType = event.type.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
 
@@ -245,14 +268,18 @@ enum PetMoodEngine {
         (0 ..< 6).contains(hour)
     }
 
-    // Fallback when `~/Library/DoNotDisturb/DB/Assertions.json` is TCC-blocked
-    // (macOS 14+): `focus.active` comes from INFocusStatusCenter but the mode
-    // identifier/name are nil. Treat any such unidentified active Focus as Sleep.
     private static func isUnidentifiedFocusAssumedAsSleep(_ focus: FocusState) -> Bool {
         guard focus.active else { return false }
         let identifier = normalizeFocusModeIdentifier(focus.modeIdentifier)
         let name = normalizeFocusModeName(focus.modeName)
-        return identifier.isEmpty && name.isEmpty
+
+        if nonSleepFocusIdentifiers.contains(identifier) {
+            return false
+        }
+        if nonSleepFocusNames.contains(name) {
+            return false
+        }
+        return true
     }
 
     private static func isFocusMode(_ focus: FocusState, identifier: String, fallbackNames: Set<String>) -> Bool {

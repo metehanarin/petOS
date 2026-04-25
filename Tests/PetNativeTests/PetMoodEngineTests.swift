@@ -132,6 +132,68 @@ struct PetMoodEngineTests {
     }
 
     @Test
+    func sleepingResolvesWhenFocusActiveWithSleepNameOnly() {
+        let state = PetTestSupport.makeState {
+            $0.hour = 14
+            $0.focus.active = true
+            $0.focus.modeIdentifier = nil
+            $0.focus.modeName = "Sleep"
+        }
+
+        let resolution = PetMoodEngine.resolveBaseMoodWithReason(for: state)
+        #expect(resolution.mood == .sleeping)
+        #expect(resolution.reason == .sleepFocusExplicit)
+    }
+
+    @Test
+    func workingResolvesWhenFocusActiveWithWorkNameOnly() {
+        let state = PetTestSupport.makeState {
+            $0.hour = 14
+            $0.focus.active = true
+            $0.focus.modeIdentifier = nil
+            $0.focus.modeName = "Work"
+        }
+
+        #expect(PetMoodEngine.resolveBaseMood(for: state) == .working)
+    }
+
+    @Test
+    func sleepingResolvesForCustomNamedFocusOutsideSleepWindow() {
+        let state = PetTestSupport.makeState {
+            $0.hour = 14
+            $0.focus.active = true
+            $0.focus.modeIdentifier = "com.example.custom.focus"
+            $0.focus.modeName = "Deep Work"
+        }
+
+        let resolution = PetMoodEngine.resolveBaseMoodWithReason(for: state)
+        #expect(resolution.mood == .sleeping)
+        #expect(resolution.reason == .unidentifiedFocusAssumedSleep)
+    }
+
+    @Test
+    func idleResolvesWhenAllFocusSourcesFailAtMidday() {
+        let state = PetTestSupport.makeState {
+            $0.hour = 14
+            $0.focus.active = false
+        }
+
+        #expect(PetMoodEngine.resolveBaseMood(for: state) == .idle)
+    }
+
+    @Test
+    func drivingFocusDoesNotResolveToSleeping() {
+        let state = PetTestSupport.makeState {
+            $0.hour = 14
+            $0.focus.active = true
+            $0.focus.modeIdentifier = "com.apple.donotdisturb.mode.driving"
+            $0.focus.modeName = "Driving"
+        }
+
+        #expect(PetMoodEngine.resolveBaseMood(for: state) == .idle)
+    }
+
+    @Test
     func unidentifiedProtectedFocusResolvesToSleepingInLateEvening() {
         let state = PetTestSupport.makeState {
             $0.hour = 23
