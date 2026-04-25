@@ -11,7 +11,12 @@ final class PetAppDelegate: NSObject, NSApplicationDelegate {
 @main
 struct PetNativeApp: App {
     @NSApplicationDelegateAdaptor(PetAppDelegate.self) private var appDelegate
-    @StateObject private var model = PetAppModel()
+    @StateObject private var model: PetAppModel
+
+    init() {
+        PetLaunchPreflight.enforceBundledExecution()
+        _model = StateObject(wrappedValue: PetAppModel())
+    }
 
     var body: some Scene {
         WindowGroup(AppConstants.appName) {
