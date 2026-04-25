@@ -313,7 +313,7 @@ final class PetMonitorCoordinator {
         focusLog.debug("infocus.status authorized=\(authorized, privacy: .public) is_focused=\(focusStatusActive, privacy: .public)")
 
         let mode = focusSourceProvider.readAssertionsFile() ?? focusSourceProvider.scrapeControlCenter()
-        let focusModeLookupProtected = !canReadFocusModeFiles
+        let focusModeLookupProtected = focusSourceProvider.focusModeLookupProtected
         let active = mode != nil || focusStatusActive
         let source = focusSource(
             mode: mode,
@@ -474,6 +474,10 @@ final class PetMonitorCoordinator {
     private var focusModeConfigurationsURL: URL {
         FileManager.default.homeDirectoryForCurrentUser
             .appending(path: "Library/DoNotDisturb/DB/ModeConfigurations.json")
+    }
+
+    var liveFocusModeLookupProtected: Bool {
+        !canReadFocusModeFiles
     }
 
     func liveReadAssertionsFile() -> FocusModeDescriptor? {

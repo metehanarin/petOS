@@ -2,6 +2,8 @@ import Foundation
 
 @MainActor
 protocol FocusSourceProvider: AnyObject {
+    var focusModeLookupProtected: Bool { get }
+
     /// Returns a descriptor parsed from `~/Library/DoNotDisturb/DB/Assertions.json`,
     /// or `nil` if no active mode / unable to read. May mutate internal state to
     /// remember "permanently denied" so subsequent calls short-circuit.
@@ -20,6 +22,10 @@ final class LiveFocusSourceProvider: FocusSourceProvider {
 
     init(coordinator: PetMonitorCoordinator? = nil) {
         self.coordinator = coordinator
+    }
+
+    var focusModeLookupProtected: Bool {
+        coordinator?.liveFocusModeLookupProtected ?? false
     }
 
     func readAssertionsFile() -> FocusModeDescriptor? {
