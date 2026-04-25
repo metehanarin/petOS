@@ -5,6 +5,7 @@ import Darwin
 import Foundation
 import Intents
 import IOKit.ps
+import os
 
 @MainActor
 final class PetMonitorCoordinator {
@@ -20,6 +21,7 @@ final class PetMonitorCoordinator {
     private var requestedFocusAuthorization = false
     private var requestedAccessibilityAuthorization = false
     private var canReadFocusModeFiles = true
+    private let focusLog = Logger(subsystem: "com.petnative.focus", category: "pipeline")
 
     init(model: PetAppModel, persistence: PetPersistence) {
         self.model = model
@@ -320,10 +322,16 @@ final class PetMonitorCoordinator {
         }
         authorized = center.authorizationStatus == .authorized
         focusStatusActive = authorized && (center.focusStatus.isFocused ?? false)
+        focusLog.debug("infocus.status authorized=\(authorized, privacy: .public) is_focused=\(focusStatusActive, privacy: .public)")
 
         let mode = readCurrentFocusMode() ?? readControlCenterFocusMode()
         let focusModeLookupProtected = !canReadFocusModeFiles
         let active = mode != nil || focusStatusActive
+        let source = focusSource(
+            mode: mode,
+            focusStatusActive: focusStatusActive,
+            focusModeLookupProtected: focusModeLookupProtected
+        )
 
         model?.updateWorldState { state in
             state.focus = FocusState(
@@ -331,13 +339,10 @@ final class PetMonitorCoordinator {
                 authorized: authorized,
                 modeIdentifier: mode?.identifier,
                 modeName: mode?.name,
-                source: focusSource(
-                    mode: mode,
-                    focusStatusActive: focusStatusActive,
-                    focusModeLookupProtected: focusModeLookupProtected
-                )
+                source: source
             )
         }
+        focusLog.debug("focus.resolved active=\(active, privacy: .public) mode_id=\(mode?.identifier ?? "", privacy: .public) mode_name=\(mode?.name ?? "", privacy: .public) source=\(source, privacy: .public)")
     }
 
     private func runBlockingShell(
@@ -491,17 +496,26 @@ final class PetMonitorCoordinator {
         do {
             let assertionsData = try Data(contentsOf: focusModeAssertionsURL)
             let configurationsData = try Data(contentsOf: focusModeConfigurationsURL)
-            return FocusModeNameResolver.resolveMode(
+            let descriptor = FocusModeNameResolver.resolveMode(
                 assertionsData: assertionsData,
                 configurationsData: configurationsData
             )
+            if let descriptor {
+                focusLog.debug("assertions.read.ok mode_id=\(descriptor.identifier, privacy: .public) mode_name=\(descriptor.name ?? "", privacy: .public)")
+            } else {
+                focusLog.debug("assertions.read.ok mode_id= mode_name= (no active mode in assertions)")
+            }
+            return descriptor
         } catch {
             if isProtectedFocusModeLookupError(error) {
+                focusLog.debug("assertions.read.denied")
                 canReadFocusModeFiles = false
                 stopFocusModeChangeObserver()
             } else if isMissingFocusModeLookupError(error) {
+                focusLog.debug("assertions.read.empty (no Assertions.json)")
                 return nil
             } else {
+                focusLog.debug("assertions.read.error error=\(error.localizedDescription, privacy: .public)")
                 NSLog("[PetNative] focus mode lookup failed: \(error.localizedDescription)")
             }
             return nil
@@ -510,6 +524,7 @@ final class PetMonitorCoordinator {
 
     private func readControlCenterFocusMode() -> FocusModeDescriptor? {
         guard accessibilityTrustedForControlCenterLookup() else {
+            focusLog.debug("controlcenter.scrape.denied")
             return nil
         }
 
@@ -519,13 +534,20 @@ final class PetMonitorCoordinator {
                 .first?
                 .processIdentifier
         else {
+            focusLog.debug("controlcenter.scrape.empty (no controlcenter process)")
             return nil
         }
 
         let appElement = AXUIElementCreateApplication(controlCenterPID)
-        return ControlCenterFocusSignalParser.resolveMode(
+        let descriptor = ControlCenterFocusSignalParser.resolveMode(
             from: collectAccessibilityStrings(from: appElement, remainingDepth: 8)
         )
+        if let descriptor {
+            focusLog.debug("controlcenter.scrape.ok mode_id=\(descriptor.identifier, privacy: .public) mode_name=\(descriptor.name ?? "", privacy: .public)")
+        } else {
+            focusLog.debug("controlcenter.scrape.empty (no sleep label found)")
+        }
+        return descriptor
     }
 
     private func collectAccessibilityStrings(from element: AXUIElement, remainingDepth: Int) -> [String] {
