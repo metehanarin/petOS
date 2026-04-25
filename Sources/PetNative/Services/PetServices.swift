@@ -306,8 +306,10 @@ final class PetMonitorCoordinator {
         }
     }
 
-    private func refreshFocus() async {
-        observeFocusModeChanges()
+    private func refreshFocus(observeChanges: Bool = true) async {
+        if observeChanges {
+            observeFocusModeChanges()
+        }
 
         let (authorized, focusStatusActive) = await focusSourceProvider.queryInFocusStatus()
         focusLog.debug("infocus.status authorized=\(authorized, privacy: .public) is_focused=\(focusStatusActive, privacy: .public)")
@@ -700,6 +702,15 @@ final class PetMonitorCoordinator {
         return error.localizedDescription.lowercased().contains("no such file")
     }
 }
+
+#if DEBUG
+extension PetMonitorCoordinator {
+    /// Test-only entry point that runs a single focus refresh cycle without installing live file watchers.
+    func refreshFocusForTest() async {
+        await refreshFocus(observeChanges: false)
+    }
+}
+#endif
 
 final class NotificationLogMonitor: @unchecked Sendable {
     var onDelivery: ((NotificationDelivery) -> Void)?
