@@ -342,7 +342,7 @@ final class PetMonitorCoordinator {
                 source: source
             )
         }
-        focusLog.debug("focus.resolved active=\(active, privacy: .public) mode_id=\(mode?.identifier ?? "", privacy: .public) mode_name=\(mode?.name ?? "", privacy: .public) source=\(source, privacy: .public)")
+        focusLog.debug("focus.resolved active=\(active, privacy: .public) mode_id=\(mode?.identifier ?? "", privacy: .private) mode_name=\(mode?.name ?? "", privacy: .private) source=\(source, privacy: .public)")
     }
 
     private func runBlockingShell(
@@ -501,7 +501,7 @@ final class PetMonitorCoordinator {
                 configurationsData: configurationsData
             )
             if let descriptor {
-                focusLog.debug("assertions.read.ok mode_id=\(descriptor.identifier, privacy: .public) mode_name=\(descriptor.name ?? "", privacy: .public)")
+                focusLog.debug("assertions.read.ok mode_id=\(descriptor.identifier, privacy: .private) mode_name=\(descriptor.name ?? "", privacy: .private)")
             } else {
                 focusLog.debug("assertions.read.ok mode_id= mode_name= (no active mode in assertions)")
             }
@@ -515,7 +515,7 @@ final class PetMonitorCoordinator {
                 focusLog.debug("assertions.read.empty (no Assertions.json)")
                 return nil
             } else {
-                focusLog.debug("assertions.read.error error=\(error.localizedDescription, privacy: .public)")
+                focusLog.debug("assertions.read.error error=\(error.localizedDescription, privacy: .private)")
                 NSLog("[PetNative] focus mode lookup failed: \(error.localizedDescription)")
             }
             return nil
@@ -543,7 +543,7 @@ final class PetMonitorCoordinator {
             from: collectAccessibilityStrings(from: appElement, remainingDepth: 8)
         )
         if let descriptor {
-            focusLog.debug("controlcenter.scrape.ok mode_id=\(descriptor.identifier, privacy: .public) mode_name=\(descriptor.name ?? "", privacy: .public)")
+            focusLog.debug("controlcenter.scrape.ok mode_id=\(descriptor.identifier, privacy: .private) mode_name=\(descriptor.name ?? "", privacy: .private)")
         } else {
             focusLog.debug("controlcenter.scrape.empty (no sleep label found)")
         }
