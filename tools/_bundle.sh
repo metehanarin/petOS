@@ -16,6 +16,8 @@ resource_fingerprint() {
   (
     cd "$REPO_ROOT"
 
+    echo "petnative-resource-fingerprint-v2"
+
     if [[ -f "$source_info_plist" ]]; then
       local hash
       hash="$(shasum -a 256 "Sources/PetNative/Info.plist" | awk '{print $1}')"
@@ -34,6 +36,42 @@ resource_fingerprint() {
       echo "missing Sources/PetNative/Resources"
     fi
   ) | shasum -a 256 | awk '{print $1}'
+}
+
+validate_packaged_resources() {
+  if [[ $# -ne 1 ]]; then
+    echo "usage: validate_packaged_resources <resource-bundle-dir>" >&2
+    return 2
+  fi
+
+  local resource_bundle="$1"
+  local source_resources="$REPO_ROOT/Sources/PetNative/Resources"
+
+  if [[ ! -d "$resource_bundle" ]]; then
+    echo "[bundle] error: missing SwiftPM resource bundle: $resource_bundle" >&2
+    return 1
+  fi
+
+  local tmp_dir
+  tmp_dir="$(mktemp -d)"
+
+  find "$source_resources" -type f -exec basename {} \; | LC_ALL=C sort -u > "$tmp_dir/source-basenames"
+  find "$resource_bundle" -type f -exec basename {} \; | LC_ALL=C sort -u > "$tmp_dir/packaged-basenames"
+
+  if ! comm -23 "$tmp_dir/packaged-basenames" "$tmp_dir/source-basenames" > "$tmp_dir/extra-basenames"; then
+    rm -rf "$tmp_dir"
+    echo "[bundle] error: failed to compare packaged resources" >&2
+    return 1
+  fi
+
+  if [[ -s "$tmp_dir/extra-basenames" ]]; then
+    echo "[bundle] error: packaged resources not present in source resources:" >&2
+    sed 's/^/[bundle]   /' "$tmp_dir/extra-basenames" >&2
+    rm -rf "$tmp_dir"
+    return 1
+  fi
+
+  rm -rf "$tmp_dir"
 }
 
 build_bundle() {

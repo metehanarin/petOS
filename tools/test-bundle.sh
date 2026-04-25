@@ -55,22 +55,7 @@ if [[ ! -f "$RESOURCE_BUNDLE/focused-01.png" ]]; then
 fi
 echo "[bundle] OK sprite resource"
 
-tmp_dir="$(mktemp -d)"
-trap 'rm -rf "$tmp_dir"' EXIT
-
-find "$REPO_ROOT/Sources/PetNative/Resources" -type f -exec basename {} \; | LC_ALL=C sort -u > "$tmp_dir/source-basenames"
-find "$RESOURCE_BUNDLE" -type f -exec basename {} \; | LC_ALL=C sort -u > "$tmp_dir/packaged-basenames"
-
-if ! comm -23 "$tmp_dir/packaged-basenames" "$tmp_dir/source-basenames" > "$tmp_dir/extra-basenames"; then
-  echo "[bundle] error: failed to compare packaged resources" >&2
-  exit 1
-fi
-
-if [[ -s "$tmp_dir/extra-basenames" ]]; then
-  echo "[bundle] error: packaged resources not present in source resources:" >&2
-  sed 's/^/[bundle]   /' "$tmp_dir/extra-basenames" >&2
-  exit 1
-fi
+validate_packaged_resources "$RESOURCE_BUNDLE"
 echo "[bundle] OK no stale packaged resources"
 
 echo "[bundle] PASS"

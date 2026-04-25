@@ -36,16 +36,17 @@ source "$SCRIPT_DIR/_bundle.sh"
 bundle_mode=()
 if [[ -f "$BUNDLE_DIR/Contents/Info.plist" ]]; then
   fingerprint_file="$BUNDLE_DIR/Contents/Resources/.petnative-resource-fingerprint"
+  resource_bundle="$BUNDLE_DIR/Contents/Resources/PetNative_PetNative.bundle"
   current_fingerprint="$(resource_fingerprint)"
   stored_fingerprint=""
   if [[ -f "$fingerprint_file" ]]; then
     stored_fingerprint="$(<"$fingerprint_file")"
   fi
 
-  if [[ "$stored_fingerprint" == "$current_fingerprint" ]]; then
+  if [[ "$stored_fingerprint" == "$current_fingerprint" ]] && validate_packaged_resources "$resource_bundle"; then
     bundle_mode=(--inner-only)
   else
-    bundle_log "resource fingerprint changed; rebuilding app resources"
+    bundle_log "resource state changed; rebuilding app resources"
   fi
 fi
 
