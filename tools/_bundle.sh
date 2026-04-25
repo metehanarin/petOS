@@ -34,6 +34,10 @@ build_bundle() {
   local resources_dir="$contents_dir/Resources"
   local info_plist="$contents_dir/Info.plist"
   local source_info_plist="$REPO_ROOT/Sources/PetNative/Info.plist"
+  local resource_bundle_name="${PRODUCT_NAME}_${PRODUCT_NAME}.bundle"
+  local app_resource_bundle="$resources_dir/$resource_bundle_name"
+  local app_launcher="$macos_dir/$PRODUCT_NAME"
+  local app_binary="$resources_dir/$PRODUCT_NAME"
 
   bundle_log "building $PRODUCT_NAME ($config)"
   (cd "$REPO_ROOT" && swift build -c "$config" --product "$PRODUCT_NAME")
@@ -63,16 +67,18 @@ build_bundle() {
 
     cp "$source_info_plist" "$info_plist"
 
-    local resource_bundle_name="${PRODUCT_NAME}_${PRODUCT_NAME}.bundle"
     local processed_bundle="$bin_path/$resource_bundle_name"
     local processed_resources="$processed_bundle/Contents/Resources"
+
+    rm -rf "$resources_dir" "$app_resource_bundle"
+    mkdir -p "$resources_dir"
+
     if [[ -d "$processed_resources" ]]; then
-      mkdir -p "$resources_dir"
-      ditto "$processed_resources" "$resources_dir"
-      bundle_log "copied processed resources"
+      mkdir -p "$app_resource_bundle/Contents/Resources"
+      ditto "$processed_resources" "$app_resource_bundle/Contents/Resources"
+      bundle_log "copied processed resource bundle"
     elif [[ -d "$processed_bundle" ]]; then
-      rm -rf "$bundle_dir/$resource_bundle_name"
-      ditto "$processed_bundle" "$resources_dir"
+      ditto "$processed_bundle" "$app_resource_bundle"
       bundle_log "copied processed resource bundle"
     else
       bundle_log "no processed resources found"
@@ -81,8 +87,17 @@ build_bundle() {
     bundle_log "updating executable only"
   fi
 
-  cp "$built_binary" "$macos_dir/$PRODUCT_NAME"
-  chmod +x "$macos_dir/$PRODUCT_NAME"
+  cp "$built_binary" "$app_binary"
+  chmod +x "$app_binary"
+
+  cat > "$app_launcher" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec "$SCRIPT_DIR/../Resources/PetNative" "$@"
+EOF
+  chmod +x "$app_launcher"
 
   bundle_log "codesigning"
   codesign --force --deep --sign - "$bundle_dir"
