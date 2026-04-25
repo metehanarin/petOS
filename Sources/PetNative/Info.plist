@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleExecutable</key>
+	<string>PetNative</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.petnative.PetNative</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>PetNative</string>
+	<key>CFBundleDisplayName</key>
+	<string>PetNative</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>14.0</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSSupportsAutomaticGraphicsSwitching</key>
+	<true/>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>PetNative reads upcoming Calendar events and now-playing music metadata to choose the pet's mood.</string>
+	<key>NSFocusStatusUsageDescription</key>
+	<string>PetNative checks whether a Focus mode is active so the pet quiets down during deep work.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>PetNative reads upcoming Calendar events to reflect your schedule in the pet's behavior.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>PetNative reads upcoming Calendar events to reflect your schedule in the pet's behavior.</string>
+	<key>NSSystemAdministrationUsageDescription</key>
+	<string>PetNative observes notification delivery log entries to react to notifications you receive.</string>
+	<key>NSAccessibilityUsageDescription</key>
+	<string>PetNative uses Accessibility to detect gestures (like swiping down) even when it is not the active app.</string>
+</dict>
+</plist>
