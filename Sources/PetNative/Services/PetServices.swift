@@ -516,7 +516,7 @@ final class PetMonitorCoordinator {
                 return nil
             } else {
                 focusLog.debug("assertions.read.error error=\(error.localizedDescription, privacy: .private)")
-                NSLog("[PetNative] focus mode lookup failed: \(error.localizedDescription)")
+                NSLog("[PetNative] focus mode lookup failed; inspect com.petnative.focus logs for details.")
             }
             return nil
         }
