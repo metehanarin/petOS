@@ -118,6 +118,20 @@ struct PetMoodEngineTests {
     }
 
     @Test
+    func resolutionExposesReasonForExplicitSleepFocus() {
+        let state = PetTestSupport.makeState {
+            $0.hour = 14
+            $0.focus.active = true
+            $0.focus.modeIdentifier = "com.apple.focus.sleep"
+            $0.focus.modeName = "Sleep"
+        }
+
+        let resolution = PetMoodEngine.resolveBaseMoodWithReason(for: state)
+        #expect(resolution.mood == .sleeping)
+        #expect(resolution.reason == .sleepFocusExplicit)
+    }
+
+    @Test
     func unidentifiedProtectedFocusResolvesToSleepingInLateEvening() {
         let state = PetTestSupport.makeState {
             $0.hour = 23

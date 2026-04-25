@@ -1,7 +1,32 @@
 import Foundation
 
 enum PetMoodEngine {
+    struct MoodResolution: Equatable {
+        let mood: PetMood
+        let reason: Reason
+    }
+
+    enum Reason: String, CaseIterable {
+        case sleepFocusExplicit = "sleep_focus_explicit"
+        case sleepWindow = "sleep_window"
+        case unidentifiedFocusAssumedSleep = "unidentified_focus_assumed_sleep"
+        case workFocus = "work_focus"
+        case productivityApp = "productivity_app"
+        case focusWithTopApp = "focus_with_top_app"
+        case imminentCalendar = "imminent_calendar"
+        case notificationAlert = "notification_alert"
+        case sickCPU = "sick_cpu"
+        case sickThermal = "sick_thermal"
+        case sickBattery = "sick_battery"
+        case musicPlaying = "music_playing"
+        case idleDefault = "idle_default"
+    }
+
     static func resolveBaseMood(for state: WorldState, now: Date = .now) -> PetMood {
+        resolveBaseMoodWithReason(for: state, now: now).mood
+    }
+
+    static func resolveBaseMoodWithReason(for state: WorldState, now: Date = .now) -> MoodResolution {
         let topAppFrontmost = isTopAppFrontmost(state.activity)
         let productivityAppFrontmost = isProductivityApp(state.activity.frontApp)
         let sleepFocusActive = isFocusMode(
@@ -17,38 +42,57 @@ enum PetMoodEngine {
             )
         let sleepModeActive = state.focus.active && sleepFocusActive
         let sleepWindowActive = isSleepWindow(hour: state.hour)
-        let unidentifiedSleepFocus = isUnidentifiedFocusAssumedAsSleep(
-            state.focus,
-            hour: state.hour
-        )
+        let unidentifiedSleepFocus = isUnidentifiedFocusAssumedAsSleep(state.focus)
 
-        if sleepModeActive || sleepWindowActive || unidentifiedSleepFocus {
-            return .sleeping
+        if sleepModeActive {
+            return MoodResolution(mood: .sleeping, reason: .sleepFocusExplicit)
         }
 
-        if state.cpu > 0.9 || ["serious", "critical"].contains(state.thermal.rawValue) ||
-            ((state.battery.level ?? 1) < 0.2)
-        {
-            return .sick
+        if sleepWindowActive {
+            return MoodResolution(mood: .sleeping, reason: .sleepWindow)
         }
 
-        if hasImminentCalendarEvent(state.calendar) || hasActiveNotificationAlert(state.notifications, now: now) {
-            return .alert
+        if unidentifiedSleepFocus {
+            return MoodResolution(mood: .sleeping, reason: .unidentifiedFocusAssumedSleep)
         }
 
-        if workFocusActive || productivityAppFrontmost {
-            return .working
+        if state.cpu > 0.9 {
+            return MoodResolution(mood: .sick, reason: .sickCPU)
+        }
+
+        if ["serious", "critical"].contains(state.thermal.rawValue) {
+            return MoodResolution(mood: .sick, reason: .sickThermal)
+        }
+
+        if (state.battery.level ?? 1) < 0.2 {
+            return MoodResolution(mood: .sick, reason: .sickBattery)
+        }
+
+        if hasImminentCalendarEvent(state.calendar) {
+            return MoodResolution(mood: .alert, reason: .imminentCalendar)
+        }
+
+        if hasActiveNotificationAlert(state.notifications, now: now) {
+            return MoodResolution(mood: .alert, reason: .notificationAlert)
+        }
+
+        if workFocusActive {
+            return MoodResolution(mood: .working, reason: .workFocus)
+        }
+
+        if productivityAppFrontmost {
+            return MoodResolution(mood: .working, reason: .productivityApp)
         }
 
         if state.focus.active && topAppFrontmost {
-            return .working
+            return MoodResolution(mood: .working, reason: .focusWithTopApp)
         }
 
         if state.music.playing {
-            return .dancing
+            return MoodResolution(mood: .dancing, reason: .musicPlaying)
         }
 
-        return .idle
+        return MoodResolution(mood: .idle, reason: .idleDefault)
     }
 
     private static let productivityAppNames: Set<String> = [
@@ -204,10 +248,7 @@ enum PetMoodEngine {
     // Fallback when `~/Library/DoNotDisturb/DB/Assertions.json` is TCC-blocked
     // (macOS 14+): `focus.active` comes from INFocusStatusCenter but the mode
     // identifier/name are nil. Treat any such unidentified active Focus as Sleep.
-    private static func isUnidentifiedFocusAssumedAsSleep(
-        _ focus: FocusState,
-        hour: Int
-    ) -> Bool {
+    private static func isUnidentifiedFocusAssumedAsSleep(_ focus: FocusState) -> Bool {
         guard focus.active else { return false }
         let identifier = normalizeFocusModeIdentifier(focus.modeIdentifier)
         let name = normalizeFocusModeName(focus.modeName)
