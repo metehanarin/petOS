@@ -265,10 +265,6 @@ final class PetMonitorCoordinator {
     }
 
     private func refreshCalendar() async {
-        guard isProperlyBundled() else {
-            return
-        }
-        
         do {
             let output = try await runBlockingShell(
                 "/usr/bin/osascript",
@@ -288,10 +284,6 @@ final class PetMonitorCoordinator {
     }
 
     private func refreshMusic() async {
-        guard isProperlyBundled() else {
-            return
-        }
-
         do {
             let state = try await queryMusicState()
             model?.updateWorldState { worldState in
@@ -313,10 +305,8 @@ final class PetMonitorCoordinator {
         let center = INFocusStatusCenter.default
         if !requestedFocusAuthorization, center.authorizationStatus == .notDetermined {
             requestedFocusAuthorization = true
-            
-            // Only request authorization if we are properly bundled.
-            // In CLI / swift run environments, this can trigger a TCC crash.
-            if isProperlyBundled() && !ProcessInfo.processInfo.arguments.contains("--no-prompts") {
+
+            if !ProcessInfo.processInfo.arguments.contains("--no-prompts") {
                 _ = await center.requestAuthorization()
             }
         }
@@ -658,21 +648,6 @@ final class PetMonitorCoordinator {
         return "status"
     }
 
-    private func isProperlyBundled() -> Bool {
-        guard let bundleID = Bundle.main.bundleIdentifier else {
-            return false
-        }
-        
-        // If we're running from a .build directory, we're likely in a dev/CLI environment
-        // where TCC prompts will crash the process.
-        let path = Bundle.main.bundlePath
-        if path.contains("/.build/") || path.contains("/DerivedData/") {
-            return false
-        }
-        
-        return !bundleID.isEmpty
-    }
-
     private func accessibilityTrustedForControlCenterLookup() -> Bool {
         if AXIsProcessTrusted() {
             return true
@@ -683,12 +658,6 @@ final class PetMonitorCoordinator {
         }
 
         requestedAccessibilityAuthorization = true
-        
-        // In some environments, AXIsProcessTrustedWithOptions with Prompt:true can crash 
-        // if the app isn't fully bundled or if TCC is in a weird state.
-        if !isProperlyBundled() {
-            return false
-        }
 
         let options = [
             "AXTrustedCheckOptionPrompt": true
