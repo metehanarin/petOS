@@ -6,7 +6,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BUNDLE_DIR="$REPO_ROOT/.build/bundle/PetNative.app"
 APP_BINARY="$BUNDLE_DIR/Contents/MacOS/PetNative"
 INFO_PLIST="$BUNDLE_DIR/Contents/Info.plist"
-RESOURCE_BUNDLE="$BUNDLE_DIR/Contents/Resources/PetNative_PetNative.bundle"
+RESOURCE_BUNDLE="$BUNDLE_DIR/PetNative_PetNative.bundle"
 EXPECTED_BUNDLE_ID="com.petnative.PetNative"
 
 # shellcheck source=tools/_bundle.sh
