@@ -16,9 +16,18 @@ struct PermissionsInspectorTests {
     }
 
     @Test
-    func paneURLsAreNonNil() {
-        #expect(PermissionsInspector.systemSettingsURL(for: .focus) != nil)
-        #expect(PermissionsInspector.systemSettingsURL(for: .accessibility) != nil)
-        #expect(PermissionsInspector.systemSettingsURL(for: .fullDiskAccess) != nil)
+    func paneURLsMatchExpectedSystemSettingsRoutes() {
+        #expect(
+            PermissionsInspector.systemSettingsURL(for: .focus)?.absoluteString ==
+                "x-apple.systempreferences:com.apple.Focus-Settings.extension"
+        )
+        #expect(
+            PermissionsInspector.systemSettingsURL(for: .accessibility)?.absoluteString ==
+                "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+        )
+        #expect(
+            PermissionsInspector.systemSettingsURL(for: .fullDiskAccess)?.absoluteString ==
+                "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles"
+        )
     }
 }

@@ -39,7 +39,7 @@ enum PermissionsInspector {
     static func systemSettingsURL(for pane: Pane) -> URL? {
         switch pane {
         case .focus:
-            return URL(string: "x-apple.systempreferences:com.apple.preference.notifications?Focus")
+            return URL(string: "x-apple.systempreferences:com.apple.Focus-Settings.extension")
         case .accessibility:
             return URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
         case .fullDiskAccess:
