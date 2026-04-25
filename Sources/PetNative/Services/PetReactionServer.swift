@@ -275,6 +275,7 @@ final class ReactionServer {
     private func readRequestData(from clientSocket: Int32) throws -> Data {
         var requestData = Data()
         var buffer = [UInt8](repeating: 0, count: 4096)
+        let deadline = Date().addingTimeInterval(2)
 
         while true {
             let bytesRead = Darwin.recv(clientSocket, &buffer, buffer.count, 0)
@@ -287,6 +288,18 @@ final class ReactionServer {
                 return requestData
             } else if errno == EINTR {
                 continue
+            } else if errno == EWOULDBLOCK || errno == EAGAIN {
+                if HTTPRequest.isComplete(requestData) {
+                    return requestData
+                }
+                guard Date() < deadline else {
+                    throw NSError(
+                        domain: NSPOSIXErrorDomain,
+                        code: Int(ETIMEDOUT),
+                        userInfo: [NSLocalizedDescriptionKey: "Timed out waiting for request body."]
+                    )
+                }
+                usleep(1_000)
             } else {
                 throw NSError(
                     domain: NSPOSIXErrorDomain,
