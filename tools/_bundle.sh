@@ -9,6 +9,33 @@ bundle_log() {
   echo "[bundle] $*"
 }
 
+resource_fingerprint() {
+  local source_info_plist="$REPO_ROOT/Sources/PetNative/Info.plist"
+  local source_resources="$REPO_ROOT/Sources/PetNative/Resources"
+
+  (
+    cd "$REPO_ROOT"
+
+    if [[ -f "$source_info_plist" ]]; then
+      local hash
+      hash="$(shasum -a 256 "Sources/PetNative/Info.plist" | awk '{print $1}')"
+      printf 'file %s %s\n' "Sources/PetNative/Info.plist" "$hash"
+    else
+      echo "missing Sources/PetNative/Info.plist"
+    fi
+
+    if [[ -d "$source_resources" ]]; then
+      find "Sources/PetNative/Resources" -type f -print | LC_ALL=C sort | while IFS= read -r path; do
+        local hash
+        hash="$(shasum -a 256 "$path" | awk '{print $1}')"
+        printf 'file %s %s\n' "$path" "$hash"
+      done
+    else
+      echo "missing Sources/PetNative/Resources"
+    fi
+  ) | shasum -a 256 | awk '{print $1}'
+}
+
 build_bundle() {
   if [[ $# -lt 2 || $# -gt 3 ]]; then
     echo "usage: build_bundle <debug|release> <bundle-output-dir> [--inner-only]" >&2
@@ -37,6 +64,7 @@ build_bundle() {
   local resource_bundle_name="${PRODUCT_NAME}_${PRODUCT_NAME}.bundle"
   local app_resource_bundle="$resources_dir/$resource_bundle_name"
   local app_binary="$macos_dir/$PRODUCT_NAME"
+  local fingerprint_file="$resources_dir/.petnative-resource-fingerprint"
 
   bundle_log "building $PRODUCT_NAME ($config)"
   (cd "$REPO_ROOT" && swift build -c "$config" --product "$PRODUCT_NAME")
@@ -82,6 +110,8 @@ build_bundle() {
     else
       bundle_log "no processed resources found"
     fi
+
+    resource_fingerprint > "$fingerprint_file"
   else
     bundle_log "updating executable only"
   fi
