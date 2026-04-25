@@ -11,6 +11,7 @@ import os
 final class PetMonitorCoordinator {
     private weak var model: PetAppModel?
     private let persistence: PetPersistence
+    private let focusSourceProvider: FocusSourceProvider
     private lazy var activityPoller = ActivityPoller(persistence: persistence)
     private let cpuSampler = CPUSampler()
 
@@ -23,9 +24,18 @@ final class PetMonitorCoordinator {
     private var canReadFocusModeFiles = true
     private let focusLog = Logger(subsystem: "com.petnative.focus", category: "pipeline")
 
-    init(model: PetAppModel, persistence: PetPersistence) {
+    init(
+        model: PetAppModel,
+        persistence: PetPersistence,
+        focusSourceProvider: FocusSourceProvider? = nil
+    ) {
         self.model = model
         self.persistence = persistence
+        let provider = focusSourceProvider ?? LiveFocusSourceProvider()
+        self.focusSourceProvider = provider
+        if let live = provider as? LiveFocusSourceProvider {
+            live.coordinator = self
+        }
     }
 
     func start() {
@@ -299,22 +309,10 @@ final class PetMonitorCoordinator {
     private func refreshFocus() async {
         observeFocusModeChanges()
 
-        var authorized = false
-        var focusStatusActive = false
-
-        let center = INFocusStatusCenter.default
-        if !requestedFocusAuthorization, center.authorizationStatus == .notDetermined {
-            requestedFocusAuthorization = true
-
-            if !ProcessInfo.processInfo.arguments.contains("--no-prompts") {
-                _ = await center.requestAuthorization()
-            }
-        }
-        authorized = center.authorizationStatus == .authorized
-        focusStatusActive = authorized && (center.focusStatus.isFocused ?? false)
+        let (authorized, focusStatusActive) = await focusSourceProvider.queryInFocusStatus()
         focusLog.debug("infocus.status authorized=\(authorized, privacy: .public) is_focused=\(focusStatusActive, privacy: .public)")
 
-        let mode = readCurrentFocusMode() ?? readControlCenterFocusMode()
+        let mode = focusSourceProvider.readAssertionsFile() ?? focusSourceProvider.scrapeControlCenter()
         let focusModeLookupProtected = !canReadFocusModeFiles
         let active = mode != nil || focusStatusActive
         let source = focusSource(
@@ -478,7 +476,7 @@ final class PetMonitorCoordinator {
             .appending(path: "Library/DoNotDisturb/DB/ModeConfigurations.json")
     }
 
-    private func readCurrentFocusMode() -> FocusModeDescriptor? {
+    func liveReadAssertionsFile() -> FocusModeDescriptor? {
         guard canReadFocusModeFiles else {
             return nil
         }
@@ -512,7 +510,7 @@ final class PetMonitorCoordinator {
         }
     }
 
-    private func readControlCenterFocusMode() -> FocusModeDescriptor? {
+    func liveScrapeControlCenter() -> FocusModeDescriptor? {
         guard accessibilityTrustedForControlCenterLookup() else {
             focusLog.debug("controlcenter.scrape.denied")
             return nil
@@ -538,6 +536,20 @@ final class PetMonitorCoordinator {
             focusLog.debug("controlcenter.scrape.empty (no sleep label found)")
         }
         return descriptor
+    }
+
+    func liveQueryInFocusStatus() async -> (authorized: Bool, isFocused: Bool) {
+        let center = INFocusStatusCenter.default
+        if !requestedFocusAuthorization, center.authorizationStatus == .notDetermined {
+            requestedFocusAuthorization = true
+            if !ProcessInfo.processInfo.arguments.contains("--no-prompts") {
+                _ = await center.requestAuthorization()
+            }
+        }
+
+        let authorized = center.authorizationStatus == .authorized
+        let focusStatusActive = authorized && (center.focusStatus.isFocused ?? false)
+        return (authorized, focusStatusActive)
     }
 
     private func collectAccessibilityStrings(from element: AXUIElement, remainingDepth: Int) -> [String] {
