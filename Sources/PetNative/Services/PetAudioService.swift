@@ -37,10 +37,11 @@ final class PetAudioService {
     }
 
     private static func loadPlayer(resourceName: String, fileExtension: String) -> AVAudioPlayer? {
+        let resourceBundle = PetResourceBundle.bundle
         let candidateURLs = [
-            Bundle.module.url(forResource: resourceName, withExtension: fileExtension),
-            Bundle.module.url(forResource: resourceName, withExtension: fileExtension, subdirectory: "Sounds"),
-            Bundle.module.url(forResource: resourceName, withExtension: fileExtension, subdirectory: "Resources/Sounds")
+            resourceBundle.url(forResource: resourceName, withExtension: fileExtension),
+            resourceBundle.url(forResource: resourceName, withExtension: fileExtension, subdirectory: "Sounds"),
+            resourceBundle.url(forResource: resourceName, withExtension: fileExtension, subdirectory: "Resources/Sounds")
         ]
 
         guard let url = candidateURLs.compactMap({ $0 }).first else {

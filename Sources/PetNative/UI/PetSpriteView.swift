@@ -53,10 +53,11 @@ enum PetSpriteCatalog {
             return cached
         }
 
+        let resourceBundle = PetResourceBundle.bundle
         let candidateURLs = [
-            Bundle.module.url(forResource: name, withExtension: "png"),
-            Bundle.module.url(forResource: name, withExtension: "png", subdirectory: "Sprites/Moods"),
-            Bundle.module.url(forResource: name, withExtension: "png", subdirectory: "Resources/Sprites/Moods")
+            resourceBundle.url(forResource: name, withExtension: "png"),
+            resourceBundle.url(forResource: name, withExtension: "png", subdirectory: "Sprites/Moods"),
+            resourceBundle.url(forResource: name, withExtension: "png", subdirectory: "Resources/Sprites/Moods")
         ]
 
         guard
@@ -199,4 +200,3 @@ struct PetSpriteView: View {
         }
     }
 }
-

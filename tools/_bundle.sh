@@ -35,7 +35,7 @@ build_bundle() {
   local info_plist="$contents_dir/Info.plist"
   local source_info_plist="$REPO_ROOT/Sources/PetNative/Info.plist"
   local resource_bundle_name="${PRODUCT_NAME}_${PRODUCT_NAME}.bundle"
-  local app_resource_bundle="$bundle_dir/$resource_bundle_name"
+  local app_resource_bundle="$resources_dir/$resource_bundle_name"
   local app_binary="$macos_dir/$PRODUCT_NAME"
 
   bundle_log "building $PRODUCT_NAME ($config)"
@@ -69,7 +69,7 @@ build_bundle() {
     local processed_bundle="$bin_path/$resource_bundle_name"
     local processed_resources="$processed_bundle/Contents/Resources"
 
-    rm -rf "$resources_dir" "$app_resource_bundle"
+    rm -rf "$resources_dir" "$bundle_dir/$resource_bundle_name"
     mkdir -p "$resources_dir"
 
     if [[ -d "$processed_resources" ]]; then
