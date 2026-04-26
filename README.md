@@ -24,15 +24,45 @@ Native macOS migration target for the Electron-based `petOS` app.
 ## Run
 
 ```bash
-cd /Users/metehanarin/Documents/NativePet
-swift run PetNative
+cd /Users/metehanarin/Documents/petOS
+./tools/run.sh
 ```
 
-Run with debug logging and mood-cycling shortcuts enabled:
+This bundles PetNative into a real `.app` so macOS TCC can persist Focus, Accessibility, and Full Disk Access grants across rebuilds. Running the binary directly via `swift run` exits with `EX_CONFIG` (78); use `./tools/run.sh` instead.
+
+Pass extra args to PetNative after `--`:
 
 ```bash
-cd /Users/metehanarin/Documents/NativePet
-swift run PetNative -- --debug
+./tools/run.sh -- --debug
+```
+
+Force a full bundle rebuild after editing bundle metadata:
+
+```bash
+./tools/run.sh --clean
+```
+
+Build a distributable bundle:
+
+```bash
+./tools/build-release.sh
+# Output: dist/PetNative.app
+```
+
+### First run - system permissions
+
+PetNative needs three macOS permissions for full Sleep Focus detection. On first launch, accept the prompts that appear, or grant them manually in System Settings -> Privacy & Security:
+
+| Permission | What it enables | If denied |
+|---|---|---|
+| Focus | The fastest path: a boolean "is any focus on" signal. | Pet only detects Sleep via Control Center scrape or the midnight-6am window. |
+| Accessibility | Reads Control Center for the active focus mode label. | Sleep is only detected via Focus boolean fallback or the time window. |
+| Full Disk Access | Most accurate: reads `~/Library/DoNotDisturb/DB/Assertions.json` directly. | Falls back to Control Center scrape when Control Center exposes the mode label. |
+
+The Settings -> System Access section in the app shows live status of all three. Diagnose any "sleeping animation is not triggering" issue with:
+
+```bash
+log show --predicate 'subsystem == "com.petnative.focus"' --last 30s --info --debug
 ```
 
 ## Cat Sounds Setup
@@ -74,7 +104,7 @@ The app will work with just the original `meow.mp3` as a fallback, but adding th
 Use a scratch build path to avoid stale copied module caches:
 
 ```bash
-cd /Users/metehanarin/Documents/NativePet
+cd /Users/metehanarin/Documents/petOS
 swift test --scratch-path /tmp/nativepet-test-build
 ```
 
