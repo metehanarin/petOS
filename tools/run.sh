@@ -56,4 +56,8 @@ else
   build_bundle debug "$BUNDLE_DIR"
 fi
 
-exec "$APP_BINARY" "${args[@]}"
+if [[ ${#args[@]} -gt 0 ]]; then
+  exec "$APP_BINARY" "${args[@]}"
+else
+  exec "$APP_BINARY"
+fi
