@@ -6,6 +6,8 @@ struct SettingsView: View {
 
     @State private var showingResetConfirmation = false
     @State private var copiedReactionURL = false
+    @State private var permissions = PermissionsInspector.snapshot()
+    @State private var permissionsTimer: Timer?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -146,9 +148,47 @@ struct SettingsView: View {
                 SettingsStatusRow(title: "Calendar", value: calendarSummary, systemImage: "calendar.badge.clock")
                 SettingsStatusRow(title: "Notifications", value: notificationSummary, systemImage: "bell.badge.fill")
             }
+
+            systemAccessSection
         }
         .formStyle(.grouped)
+        .onAppear {
+            refreshPermissions()
+            permissionsTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
+                Task { @MainActor in
+                    refreshPermissions()
+                }
+            }
+        }
+        .onDisappear {
+            permissionsTimer?.invalidate()
+            permissionsTimer = nil
+        }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private var systemAccessSection: some View {
+        Section("System Access") {
+            permissionRow(
+                label: "Focus",
+                status: permissions.focusStatus,
+                pane: .focus
+            )
+            permissionRow(
+                label: "Accessibility",
+                status: permissions.accessibility,
+                pane: .accessibility
+            )
+            permissionRow(
+                label: "Full Disk Access",
+                status: permissions.fullDiskAccess,
+                pane: .fullDiskAccess
+            )
+
+            Text("Sleep detection works best when all three are granted. Without Full Disk Access, the app falls back to Control Center, which requires its panel to be visible.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
     }
 
     private var soundBinding: Binding<Bool> {
@@ -259,6 +299,62 @@ struct SettingsView: View {
         }
 
         return bundleID
+    }
+
+    private func permissionRow(
+        label: String,
+        status: PermissionsSnapshot.Status,
+        pane: PermissionsInspector.Pane
+    ) -> some View {
+        HStack(spacing: 10) {
+            Circle()
+                .fill(color(for: status))
+                .frame(width: 10, height: 10)
+
+            Text(label)
+
+            Spacer(minLength: 12)
+
+            Text(statusLabel(for: status))
+                .foregroundStyle(.secondary)
+
+            Button {
+                PermissionsInspector.openSystemSettings(for: pane)
+            } label: {
+                Label("Open", systemImage: "gearshape")
+            }
+            .buttonStyle(.link)
+        }
+    }
+
+    private func refreshPermissions() {
+        permissions = PermissionsInspector.snapshot()
+    }
+
+    private func color(for status: PermissionsSnapshot.Status) -> Color {
+        switch status {
+        case .granted:
+            return .green
+        case .denied:
+            return .red
+        case .notDetermined:
+            return .yellow
+        case .unknown:
+            return .gray
+        }
+    }
+
+    private func statusLabel(for status: PermissionsSnapshot.Status) -> String {
+        switch status {
+        case .granted:
+            return "Granted"
+        case .denied:
+            return "Not granted"
+        case .notDetermined:
+            return "Not yet asked"
+        case .unknown:
+            return "Unknown"
+        }
     }
 
     private func reactionButton(_ title: String, systemImage: String, type: String) -> some View {
