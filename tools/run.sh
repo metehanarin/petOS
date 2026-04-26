@@ -33,7 +33,7 @@ fi
 # shellcheck source=tools/_bundle.sh
 source "$SCRIPT_DIR/_bundle.sh"
 
-bundle_mode=()
+bundle_mode=""
 if [[ -f "$BUNDLE_DIR/Contents/Info.plist" ]]; then
   fingerprint_file="$BUNDLE_DIR/Contents/Resources/.petnative-resource-fingerprint"
   resource_bundle="$BUNDLE_DIR/Contents/Resources/PetNative_PetNative.bundle"
@@ -44,12 +44,16 @@ if [[ -f "$BUNDLE_DIR/Contents/Info.plist" ]]; then
   fi
 
   if [[ "$stored_fingerprint" == "$current_fingerprint" ]] && validate_packaged_resources "$resource_bundle"; then
-    bundle_mode=(--inner-only)
+    bundle_mode="--inner-only"
   else
     bundle_log "resource state changed; rebuilding app resources"
   fi
 fi
 
-build_bundle debug "$BUNDLE_DIR" "${bundle_mode[@]}"
+if [[ -n "$bundle_mode" ]]; then
+  build_bundle debug "$BUNDLE_DIR" "$bundle_mode"
+else
+  build_bundle debug "$BUNDLE_DIR"
+fi
 
 exec "$APP_BINARY" "${args[@]}"
