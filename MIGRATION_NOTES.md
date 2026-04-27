@@ -45,6 +45,9 @@
 
 ## Known Gaps / Next Batch
 
-- replace remaining shell-script-backed integrations with tighter native APIs where practical
-- decide whether to keep the app as an accessory/menu-bar companion long-term or promote it to a fuller app bundle with richer settings/onboarding
+- complete missing sprite frames for `idle`, `sleeping`, `alert`, and `working` mood animations
+- replace AppleScript-backed calendar integration with native EventKit
+- replace AppleScript+pgrep music detection with native MediaRemote
+- user-configurable weather location (currently hardcoded to Istanbul)
+- launch-at-login support via ServiceManagement
 - evaluate widget/App Group support after the main app behavior is fully validated

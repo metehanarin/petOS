@@ -12,7 +12,7 @@ final class PetAudioService {
             }
         }
 
-        for i in 1...5 {
+        for i in 1...10 {
             let player = Self.loadPlayer(resourceName: "purr\(i)", fileExtension: "mp3")
                 ?? Self.loadPlayer(resourceName: "purr\(i)", fileExtension: "wav")
             if let player {

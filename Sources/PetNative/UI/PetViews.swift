@@ -42,9 +42,6 @@ struct ContentView: View {
         .task {
             model.start()
         }
-        .onDisappear {
-            model.stop()
-        }
     }
 }
 

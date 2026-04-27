@@ -6,6 +6,10 @@ final class PetAppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.accessory)
         NSApp.activate(ignoringOtherApps: false)
     }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        PetAppModel.current?.stop()
+    }
 }
 
 @main
@@ -15,7 +19,9 @@ struct PetNativeApp: App {
 
     init() {
         PetLaunchPreflight.enforceBundledExecution()
-        _model = StateObject(wrappedValue: PetAppModel())
+        let model = PetAppModel()
+        PetAppModel.current = model
+        _model = StateObject(wrappedValue: model)
     }
 
     var body: some Scene {

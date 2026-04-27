@@ -13,6 +13,10 @@ struct PetDebugSnapshot: Codable {
 
 @MainActor
 final class PetAppModel: ObservableObject {
+    /// Weak reference used by `PetAppDelegate.applicationWillTerminate` to ensure
+    /// clean shutdown (stop monitors, save lastSeen, release system resources).
+    static weak var current: PetAppModel?
+
     @Published private(set) var worldState: WorldState
     @Published private(set) var currentMood: PetMood
     @Published private(set) var age: Int
@@ -37,7 +41,6 @@ final class PetAppModel: ObservableObject {
     private var reactionServer: ReactionServer?
     private var debugMoodOverride: PetMood?
     private var started = false
-    private static var globalStarted = false
     private let audioService = PetAudioService()
     private lazy var gestureMonitor = PetGestureMonitor { [weak self] in
         self?.handleMeowGesture()
@@ -73,14 +76,7 @@ final class PetAppModel: ObservableObject {
             return
         }
 
-        if Self.globalStarted {
-            NSLog("[PetNative] PetAppModel.start() called but another instance already started monitors; skipping.")
-            started = true
-            return
-        }
-
         started = true
-        Self.globalStarted = true
         age = persistence.syncAge()
         updateTimeOfDay()
         monitorCoordinator.start()

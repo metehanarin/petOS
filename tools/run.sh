@@ -56,8 +56,11 @@ else
   build_bundle debug "$BUNDLE_DIR"
 fi
 
+# Launch via `open` so Launch Services registers the bundle and TCC can read Info.plist.
+# Running the inner binary directly bypasses LS, which makes TCC reject privacy-sensitive
+# APIs (e.g. INFocusStatusCenter) with a crash even when Info.plist contains the keys.
 if [[ ${#args[@]} -gt 0 ]]; then
-  exec "$APP_BINARY" "${args[@]}"
+  exec /usr/bin/open -W "$BUNDLE_DIR" --args "${args[@]}"
 else
-  exec "$APP_BINARY"
+  exec /usr/bin/open -W "$BUNDLE_DIR"
 fi

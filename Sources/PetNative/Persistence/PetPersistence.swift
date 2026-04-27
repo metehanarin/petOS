@@ -91,6 +91,7 @@ final class PetPersistence {
     private let fileManager: FileManager
     private let fileURL: URL
     private var snapshot: PersistedPetState
+    private var debouncedFlushWorkItem: DispatchWorkItem?
 
     init(fileManager: FileManager = .default, fileURL: URL? = nil) {
         self.fileManager = fileManager
@@ -152,7 +153,7 @@ final class PetPersistence {
 
     func savePosition(_ position: CGPoint) {
         snapshot.position = PetPosition(position)
-        flush()
+        debouncedFlush()
     }
 
     func saveLastSeen(_ date: Date = .now) {
@@ -216,7 +217,22 @@ final class PetPersistence {
         flush()
     }
 
+    /// Coalesces rapid writes (e.g. window drag) into a single disk write
+    /// after the specified delay. If a new debounced flush arrives before the
+    /// previous fires, the previous is cancelled.
+    private func debouncedFlush(delay: TimeInterval = 0.3) {
+        debouncedFlushWorkItem?.cancel()
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.flush()
+        }
+        debouncedFlushWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
+    }
+
     private func flush() {
+        debouncedFlushWorkItem?.cancel()
+        debouncedFlushWorkItem = nil
+
         let directoryURL = fileURL.deletingLastPathComponent()
 
         do {

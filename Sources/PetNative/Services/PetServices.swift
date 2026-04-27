@@ -567,6 +567,14 @@ final class PetMonitorCoordinator {
     }
 
     func liveQueryInFocusStatus() async -> (authorized: Bool, isFocused: Bool) {
+        // TCC aborts the process (SIGABRT, uncatchable) when INFocusStatusCenter is touched
+        // without a usage description visible to TCC. That happens when the app is launched
+        // outside a registered .app bundle (e.g. `swift run` or running the inner binary
+        // directly). Bail out cleanly in those cases instead of crashing.
+        guard PetMonitorCoordinator.canSafelyAccessFocusStatus() else {
+            return (false, false)
+        }
+
         let center = INFocusStatusCenter.default
         if !requestedFocusAuthorization, center.authorizationStatus == .notDetermined {
             requestedFocusAuthorization = true
@@ -578,6 +586,17 @@ final class PetMonitorCoordinator {
         let authorized = center.authorizationStatus == .authorized
         let focusStatusActive = authorized && (center.focusStatus.isFocused ?? false)
         return (authorized, focusStatusActive)
+    }
+
+    nonisolated static func canSafelyAccessFocusStatus() -> Bool {
+        let bundle = Bundle.main
+        guard bundle.bundlePath.hasSuffix(".app") else {
+            return false
+        }
+        guard bundle.object(forInfoDictionaryKey: "NSFocusStatusUsageDescription") is String else {
+            return false
+        }
+        return true
     }
 
     private func collectAccessibilityStrings(from element: AXUIElement, remainingDepth: Int) -> [String] {
@@ -725,6 +744,7 @@ extension PetMonitorCoordinator {
 final class NotificationLogMonitor: @unchecked Sendable {
     var onDelivery: ((NotificationDelivery) -> Void)?
 
+    private let queue = DispatchQueue(label: "PetNative.NotificationLogMonitor")
     private var process: Process?
     private var stdoutHandle: FileHandle?
     private var stderrHandle: FileHandle?
@@ -734,13 +754,22 @@ final class NotificationLogMonitor: @unchecked Sendable {
     private var lastPresentedAtByBundleID: [String: Date] = [:]
 
     func start() {
-        disposed = false
-        buffer.removeAll(keepingCapacity: true)
-        lastPresentedAtByBundleID.removeAll(keepingCapacity: true)
-        startStream()
+        queue.sync {
+            disposed = false
+            buffer.removeAll(keepingCapacity: true)
+            lastPresentedAtByBundleID.removeAll(keepingCapacity: true)
+            startStream()
+        }
     }
 
     func stop() {
+        queue.sync {
+            stopLocked()
+        }
+    }
+
+    /// Must be called while holding `queue`.
+    private func stopLocked() {
         disposed = true
         restartWorkItem?.cancel()
         stdoutHandle?.readabilityHandler = nil
@@ -752,6 +781,7 @@ final class NotificationLogMonitor: @unchecked Sendable {
         process = nil
     }
 
+    /// Must be called while holding `queue`.
     private func startStream() {
         let process = Process()
         let stdoutPipe = Pipe()
@@ -776,7 +806,9 @@ final class NotificationLogMonitor: @unchecked Sendable {
             guard !data.isEmpty else {
                 return
             }
-            self?.consume(data)
+            self?.queue.async {
+                self?.consume(data)
+            }
         }
 
         stderrPipe.fileHandleForReading.readabilityHandler = { handle in
@@ -791,7 +823,9 @@ final class NotificationLogMonitor: @unchecked Sendable {
         }
 
         process.terminationHandler = { [weak self] _ in
-            self?.scheduleRestart()
+            self?.queue.async {
+                self?.scheduleRestart()
+            }
         }
 
         do {
@@ -802,6 +836,7 @@ final class NotificationLogMonitor: @unchecked Sendable {
         }
     }
 
+    /// Must be called while holding `queue`.
     private func consume(_ data: Data) {
         buffer.append(data)
 
@@ -826,6 +861,7 @@ final class NotificationLogMonitor: @unchecked Sendable {
         }
     }
 
+    /// Must be called while holding `queue`.
     private func shouldEmit(_ delivery: NotificationDelivery) -> Bool {
         let bundleID = delivery.bundleID.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard !bundleID.isEmpty else {
@@ -850,28 +886,35 @@ final class NotificationLogMonitor: @unchecked Sendable {
         return elapsed < 0 || elapsed > AppConstants.notificationDelayedFallbackDeduplicationWindow
     }
 
+    /// Must be called while holding `queue`.
     private func prunePresentedDeliveries(now: Date) {
         lastPresentedAtByBundleID = lastPresentedAtByBundleID.filter { _, presentedAt in
             abs(now.timeIntervalSince(presentedAt)) <= AppConstants.notificationDelayedFallbackDeduplicationWindow
         }
     }
 
+    /// Must be called while holding `queue`.
     private func scheduleRestart() {
         guard !disposed else {
             return
         }
 
-        stop()
+        stopLocked()
         disposed = false
         restartWorkItem?.cancel()
         let workItem = DispatchWorkItem { [weak self] in
-            guard let self, !self.disposed else {
+            guard let self else {
                 return
             }
-
-            self.startStream()
+            self.queue.async {
+                guard !self.disposed else {
+                    return
+                }
+                self.startStream()
+            }
         }
         restartWorkItem = workItem
         DispatchQueue.main.asyncAfter(deadline: .now() + AppConstants.notificationMonitorRestartDelay, execute: workItem)
     }
 }
+
