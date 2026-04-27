@@ -154,13 +154,17 @@ enum ActivityQueries {
     private static let commandTimeout: TimeInterval = 3
 
     static func queryFrontmostApp() async throws -> String {
-        NSWorkspace.shared.frontmostApplication?.localizedName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        await MainActor.run {
+            NSWorkspace.shared.frontmostApplication?.localizedName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        }
     }
 
     static func queryRunningApps() async throws -> [String] {
-        NSWorkspace.shared.runningApplications
-            .filter { !$0.isTerminated && $0.activationPolicy != .prohibited }
-            .compactMap(\.localizedName)
+        await MainActor.run {
+            NSWorkspace.shared.runningApplications
+                .filter { !$0.isTerminated && $0.activationPolicy != .prohibited }
+                .compactMap(\.localizedName)
+        }
     }
 
     static func queryTopApps(

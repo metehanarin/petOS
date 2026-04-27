@@ -4,6 +4,9 @@ import Darwin
 enum PetLaunchPreflight {
     /// Aborts with EX_CONFIG (78) if the binary is executed outside an .app bundle.
     static func enforceBundledExecution() {
+        #if DEBUG
+        return
+        #else
         let path = Bundle.main.bundlePath
         if path.hasSuffix(".app") {
             return
@@ -19,5 +22,6 @@ enum PetLaunchPreflight {
             stderr
         )
         exit(78)
+        #endif
     }
 }

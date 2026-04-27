@@ -168,6 +168,28 @@ final class PetMonitorCoordinator {
                 }
             }
         })
+
+        workspaceObservers.append(notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard
+                let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
+                app.activationPolicy == .regular,
+                let name = app.localizedName
+            else {
+                NSLog("[PetNative] app-activated: skipped (accessory or no name)")
+                return
+            }
+            let appName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+            NSLog("[PetNative] app-activated: '%@'", appName)
+            Task { @MainActor [weak self] in
+                self?.model?.updateWorldState { state in
+                    state.activity.frontApp = appName
+                }
+            }
+        })
     }
 
     private func observeFocusModeChanges() {
@@ -597,18 +619,6 @@ final class PetMonitorCoordinator {
         }
 
         return strings
-    }
-
-    private func copyAccessibilityElementAttribute(_ element: AXUIElement, attribute: CFString) -> AXUIElement? {
-        guard let value = copyAccessibilityAttribute(element, attribute: attribute) else {
-            return nil
-        }
-
-        guard CFGetTypeID(value) == AXUIElementGetTypeID() else {
-            return nil
-        }
-
-        return (value as! AXUIElement)
     }
 
     private func copyAccessibilityAttribute(_ element: AXUIElement, attribute: CFString) -> AnyObject? {

@@ -35,10 +35,6 @@ struct ContentView: View {
                 Button("Clear Mood Override", action: model.clearDebugMoodOverride)
             }
             Divider()
-            Button("Test Sparkle") {
-                model.enqueueReaction(type: "sparkle")
-            }
-            Divider()
             Button("Quit") {
                 NSApplication.shared.terminate(nil)
             }

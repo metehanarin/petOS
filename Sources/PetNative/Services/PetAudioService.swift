@@ -12,8 +12,10 @@ final class PetAudioService {
             }
         }
 
-        for i in 1...10 {
-            if let player = Self.loadPlayer(resourceName: "purr\(i)", fileExtension: "mp3") {
+        for i in 1...5 {
+            let player = Self.loadPlayer(resourceName: "purr\(i)", fileExtension: "mp3")
+                ?? Self.loadPlayer(resourceName: "purr\(i)", fileExtension: "wav")
+            if let player {
                 players.append(player)
             }
         }
@@ -25,15 +27,26 @@ final class PetAudioService {
         NSLog("[PetNative] PetAudioService init; total sounds loaded=\(players.count)")
     }
 
+    private var stopTask: Task<Void, Never>?
+
     func playRandomSound() {
         guard let player = players.randomElement() else {
             NSLog("[PetNative] no audio files available")
             return
         }
 
+        stopTask?.cancel()
+        players.forEach { $0.stop() }
+
         player.currentTime = 0
         let didPlay = player.play()
         NSLog("[PetNative] playRandomSound called; didPlay=\(didPlay) volume=\(player.volume) duration=\(player.duration)")
+
+        stopTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(2))
+            player.stop()
+            self?.stopTask = nil
+        }
     }
 
     private static func loadPlayer(resourceName: String, fileExtension: String) -> AVAudioPlayer? {
