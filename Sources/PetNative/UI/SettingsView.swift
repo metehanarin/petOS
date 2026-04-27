@@ -5,7 +5,6 @@ struct SettingsView: View {
     @ObservedObject var model: PetAppModel
 
     @State private var showingResetConfirmation = false
-    @State private var copiedReactionURL = false
     @State private var permissions = PermissionsInspector.snapshot()
     @State private var permissionsTimer: Timer?
 
@@ -20,11 +19,6 @@ struct SettingsView: View {
                 careTab
                     .tabItem {
                         Label("Care", systemImage: "heart.fill")
-                    }
-
-                behaviorTab
-                    .tabItem {
-                        Label("Behavior", systemImage: "pawprint.fill")
                     }
 
                 signalsTab
@@ -56,15 +50,6 @@ struct SettingsView: View {
                 Toggle("Swipe down to meow", isOn: swipeMeowBinding)
             }
 
-            Section("Play") {
-                HStack(spacing: 8) {
-                    reactionButton("Sparkle", systemImage: "sparkles", type: "sparkle_clap")
-                    reactionButton("Heart", systemImage: "heart.fill", type: "heart_love")
-                    reactionButton("Zap", systemImage: "bolt.fill", type: "zap")
-                    reactionButton("Pulse", systemImage: "circle.hexagongrid.fill", type: "pulse")
-                }
-            }
-
             Section("Position") {
                 HStack {
                     Button {
@@ -87,51 +72,6 @@ struct SettingsView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
-    private var behaviorTab: some View {
-        Form {
-            Section("Window") {
-                Toggle("Always on top", isOn: alwaysOnTopBinding)
-            }
-
-            Section("Local hook") {
-                Toggle("Reaction server", isOn: reactionServerBinding)
-
-                HStack(spacing: 10) {
-                    Text(reactionURL)
-                        .font(.system(.body, design: .monospaced))
-                        .textSelection(.enabled)
-                        .lineLimit(1)
-
-                    Spacer()
-
-                    Button {
-                        copyReactionURL()
-                    } label: {
-                        Label(copiedReactionURL ? "Copied" : "Copy", systemImage: copiedReactionURL ? "checkmark" : "doc.on.doc")
-                    }
-                    .buttonStyle(.bordered)
-                }
-            }
-
-            Section("Detected top apps") {
-                if displayedTopApps.isEmpty {
-                    Label("No app data yet", systemImage: "app.dashed")
-                        .foregroundStyle(.secondary)
-                } else {
-                    ForEach(displayedTopApps, id: \.self) { appName in
-                        Label(
-                            appName,
-                            systemImage: appName == model.worldState.activity.frontApp ? "arrow.right.circle.fill" : "app.dashed"
-                        )
-                        .lineLimit(1)
-                    }
-                }
-            }
-        }
-        .formStyle(.grouped)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    }
-
     private var signalsTab: some View {
         Form {
             Section("Pet") {
@@ -140,10 +80,8 @@ struct SettingsView: View {
             }
 
             Section("World") {
-                SettingsStatusRow(title: "Focus", value: focusSummary, systemImage: "moon.zzz.fill")
                 SettingsStatusRow(title: "Front app", value: frontAppSummary, systemImage: "macwindow")
                 SettingsStatusRow(title: "Battery", value: batterySummary, systemImage: "battery.100percent")
-                SettingsStatusRow(title: "Weather", value: weatherSummary, systemImage: "cloud.sun.fill")
                 SettingsStatusRow(title: "Music", value: musicSummary, systemImage: "music.note")
                 SettingsStatusRow(title: "Calendar", value: calendarSummary, systemImage: "calendar.badge.clock")
                 SettingsStatusRow(title: "Notifications", value: notificationSummary, systemImage: "bell.badge.fill")
@@ -170,11 +108,6 @@ struct SettingsView: View {
     private var systemAccessSection: some View {
         Section("System Access") {
             permissionRow(
-                label: "Focus",
-                status: permissions.focusStatus,
-                pane: .focus
-            )
-            permissionRow(
                 label: "Accessibility",
                 status: permissions.accessibility,
                 pane: .accessibility
@@ -185,7 +118,7 @@ struct SettingsView: View {
                 pane: .fullDiskAccess
             )
 
-            Text("Sleep detection works best when all three are granted. Without Full Disk Access, the app falls back to Control Center, which requires its panel to be visible.")
+            Text("Sleep detection works best when both are granted. Without Full Disk Access, the app falls back to Control Center, which requires its panel to be visible.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -205,58 +138,14 @@ struct SettingsView: View {
         )
     }
 
-    private var reactionServerBinding: Binding<Bool> {
-        Binding(
-            get: { model.reactionServerEnabled },
-            set: { model.setReactionServerEnabled($0) }
-        )
-    }
-
-    private var alwaysOnTopBinding: Binding<Bool> {
-        Binding(
-            get: { model.alwaysOnTop },
-            set: { model.setAlwaysOnTop($0) }
-        )
-    }
-
-    private var reactionURL: String {
-        "http://127.0.0.1:\(AppConstants.reactionServerPort)/reaction"
-    }
-
-    private var displayedTopApps: [String] {
-        Array(model.worldState.activity.topApps.prefix(8))
-    }
-
     private var frontAppSummary: String {
         model.worldState.activity.frontApp.isEmpty ? "None" : model.worldState.activity.frontApp
-    }
-
-    private var focusSummary: String {
-        let focus = model.worldState.focus
-        guard focus.authorized else {
-            return "Not authorized"
-        }
-
-        guard focus.active else {
-            return "Off"
-        }
-
-        return focus.modeName ?? "On"
     }
 
     private var batterySummary: String {
         let battery = model.worldState.battery
         let percentage = Int(((battery.level ?? 0) * 100).rounded())
         return "\(percentage)% - \(battery.status.capitalized)"
-    }
-
-    private var weatherSummary: String {
-        let weather = model.worldState.weather
-        if let tempC = weather.tempC {
-            return "\(weather.condition.rawValue.capitalized) - \(Int(tempC.rounded())) C"
-        }
-
-        return weather.condition.rawValue.capitalized
     }
 
     private var musicSummary: String {
@@ -357,25 +246,6 @@ struct SettingsView: View {
         }
     }
 
-    private func reactionButton(_ title: String, systemImage: String, type: String) -> some View {
-        Button {
-            model.enqueueReaction(type: type)
-        } label: {
-            Label(title, systemImage: systemImage)
-        }
-        .buttonStyle(.bordered)
-    }
-
-    private func copyReactionURL() {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(reactionURL, forType: .string)
-        copiedReactionURL = true
-
-        Task { @MainActor in
-            try? await Task.sleep(for: .seconds(1.2))
-            copiedReactionURL = false
-        }
-    }
 }
 
 private struct SettingsHeaderView: View {
@@ -400,7 +270,7 @@ private struct SettingsHeaderView: View {
             .frame(width: 128, height: 98)
 
             VStack(alignment: .leading, spacing: 8) {
-                Label(AppConstants.appName, systemImage: "pawprint.fill")
+                Label(AppConstants.petName, systemImage: "pawprint.fill")
                     .font(.title3.weight(.semibold))
 
                 Text("\(model.currentMood.displayName) - \(model.age) days old")
