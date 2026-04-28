@@ -46,14 +46,14 @@ struct PetPersistenceTests {
         let persistence = PetPersistence(fileURL: fileURL)
 
         #expect(persistence.setSoundEnabled(true) == true)
-        #expect(persistence.setSwipeMeowEnabled(false) == false)
+        #expect(persistence.setSwipeSoundEnabled(false) == false)
         #expect(persistence.setReactionServerEnabled(false) == false)
         #expect(persistence.setAlwaysOnTop(false) == false)
 
         let reloadedPersistence = PetPersistence(fileURL: fileURL)
         #expect(reloadedPersistence.currentSnapshot.preferences == PetPreferences(
             soundEnabled: true,
-            swipeMeowEnabled: false,
+            swipeSoundEnabled: false,
             reactionServerEnabled: false,
             alwaysOnTop: false
         ))
@@ -81,7 +81,7 @@ struct PetPersistenceTests {
         #expect(persistence.currentSnapshot.age == 4)
         #expect(persistence.currentSnapshot.preferences == PetPreferences(
             soundEnabled: true,
-            swipeMeowEnabled: true,
+            swipeSoundEnabled: true,
             reactionServerEnabled: true,
             alwaysOnTop: true
         ))

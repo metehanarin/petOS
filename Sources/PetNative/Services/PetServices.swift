@@ -55,12 +55,6 @@ final class PetMonitorCoordinator {
         addRepeatingTask(every: 15) { [weak self] in
             await self?.refreshPower()
         }
-        addRepeatingTask(every: 900) { [weak self] in
-            await self?.refreshWeather()
-        }
-        addRepeatingTask(every: 60) { [weak self] in
-            await self?.refreshCalendar()
-        }
         addRepeatingTask(every: 1) { [weak self] in
             await self?.refreshMusic()
         }
@@ -277,44 +271,6 @@ final class PetMonitorCoordinator {
         }
     }
 
-    private func refreshWeather() async {
-        guard let url = WeatherService.url() else {
-            return
-        }
-
-        do {
-            let (data, _) = try await URLSession.shared.data(from: url)
-            guard let weatherState = WeatherService.parseCurrentWeather(from: data) else {
-                return
-            }
-
-            model?.updateWorldState { state in
-                state.weather = weatherState
-            }
-        } catch {
-            NSLog("[PetNative] weather refresh failed: \(error.localizedDescription)")
-        }
-    }
-
-    private func refreshCalendar() async {
-        do {
-            let output = try await runBlockingShell(
-                "/usr/bin/osascript",
-                arguments: calendarScriptArguments,
-                timeout: 10
-            )
-            let calendarState = CalendarEventParser.parse(output, now: .now)
-
-            model?.updateWorldState { state in
-                state.calendar = calendarState
-            }
-        } catch {
-            model?.updateWorldState { state in
-                state.calendar = .default
-            }
-        }
-    }
-
     private func refreshMusic() async {
         do {
             let state = try await queryMusicState()
@@ -440,42 +396,6 @@ final class PetMonitorCoordinator {
             onBatteryPower: onBatteryPower,
             status: status
         )
-    }
-
-    private var calendarScriptArguments: [String] {
-        [
-            "-e", "on padNumber(n)",
-            "-e", "if n < 10 then return \"0\" & (n as text)",
-            "-e", "return n as text",
-            "-e", "end padNumber",
-            "-e", "on isoStampForDate(theDate)",
-            "-e", "set yyyy to (year of theDate as integer) as text",
-            "-e", "set mm to my padNumber(month of theDate as integer)",
-            "-e", "set dd to my padNumber(day of theDate as integer)",
-            "-e", "set hh to my padNumber(hours of theDate)",
-            "-e", "set mi to my padNumber(minutes of theDate)",
-            "-e", "set ss to my padNumber(seconds of theDate)",
-            "-e", "return yyyy & \"-\" & mm & \"-\" & dd & \"T\" & hh & \":\" & mi & \":\" & ss",
-            "-e", "end isoStampForDate",
-            "-e", "set nowDate to current date",
-            "-e", "set cutoffDate to nowDate + (15 * minutes)",
-            "-e", "set bestSummary to \"\"",
-            "-e", "set bestDate to missing value",
-            "-e", "tell application \"Calendar\"",
-            "-e", "repeat with currentCalendar in calendars",
-            "-e", "set matchingEvents to (every event of currentCalendar where its start date is greater than or equal to nowDate and its start date is less than or equal to cutoffDate)",
-            "-e", "repeat with currentEvent in matchingEvents",
-            "-e", "set currentStart to start date of currentEvent",
-            "-e", "if bestDate is missing value or currentStart < bestDate then",
-            "-e", "set bestDate to currentStart",
-            "-e", "set bestSummary to summary of currentEvent",
-            "-e", "end if",
-            "-e", "end repeat",
-            "-e", "end repeat",
-            "-e", "end tell",
-            "-e", "if bestDate is missing value then return \"\"",
-            "-e", "return bestSummary & tab & my isoStampForDate(bestDate)"
-        ]
     }
 
     private func musicScriptArguments(for player: String) -> [String] {

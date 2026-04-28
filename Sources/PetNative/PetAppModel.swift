@@ -21,7 +21,7 @@ final class PetAppModel: ObservableObject {
     @Published private(set) var currentMood: PetMood
     @Published private(set) var age: Int
     @Published var soundEnabled: Bool
-    @Published private(set) var swipeMeowEnabled: Bool
+    @Published private(set) var swipeSoundEnabled: Bool
     @Published private(set) var reactionServerEnabled: Bool
     @Published private(set) var alwaysOnTop: Bool
     @Published private(set) var latestReaction: PetEvent?
@@ -43,9 +43,9 @@ final class PetAppModel: ObservableObject {
     private var started = false
     private lazy var audioService = PetAudioService()
     private lazy var gestureMonitor = PetGestureMonitor { [weak self] in
-        self?.handleMeowGesture()
+        self?.handleSoundGesture()
     }
-    private var lastMeowAt: Date?
+    private var lastSoundAt: Date?
 
     init(
         arguments: [String] = ProcessInfo.processInfo.arguments,
@@ -65,7 +65,7 @@ final class PetAppModel: ObservableObject {
         moodLog.debug("mood.resolved mood=\(resolution.mood.rawValue, privacy: .public) reason=\(resolution.reason.rawValue, privacy: .public)")
         age = snapshot.age
         soundEnabled = preferences.soundEnabled
-        swipeMeowEnabled = preferences.swipeMeowEnabled
+        swipeSoundEnabled = preferences.swipeSoundEnabled
         reactionServerEnabled = preferences.reactionServerEnabled
         alwaysOnTop = preferences.alwaysOnTop
         debugEnabled = arguments.contains("--debug")
@@ -81,7 +81,7 @@ final class PetAppModel: ObservableObject {
         updateTimeOfDay()
         monitorCoordinator.start()
         applyReactionServerPreference()
-        applySwipeMeowPreference()
+        applySwipeSoundPreference()
         startDebugLoggingIfNeeded()
         recomputeMood()
     }
@@ -111,7 +111,7 @@ final class PetAppModel: ObservableObject {
         age = persistence.currentSnapshot.age
         let preferences = persistence.currentSnapshot.preferences
         soundEnabled = preferences.soundEnabled
-        swipeMeowEnabled = preferences.swipeMeowEnabled
+        swipeSoundEnabled = preferences.swipeSoundEnabled
         reactionServerEnabled = preferences.reactionServerEnabled
         alwaysOnTop = preferences.alwaysOnTop
         notificationClearTask?.cancel()
@@ -121,7 +121,7 @@ final class PetAppModel: ObservableObject {
         notificationToken = nil
         worldState = .default
         applyReactionServerPreference()
-        applySwipeMeowPreference()
+        applySwipeSoundPreference()
         windowManager.setAlwaysOnTop(alwaysOnTop)
         updateTimeOfDay()
         recomputeMood()
@@ -136,9 +136,9 @@ final class PetAppModel: ObservableObject {
         soundEnabled = persistence.setSoundEnabled(value)
     }
 
-    func setSwipeMeowEnabled(_ value: Bool) {
-        swipeMeowEnabled = persistence.setSwipeMeowEnabled(value)
-        applySwipeMeowPreference()
+    func setSwipeSoundEnabled(_ value: Bool) {
+        swipeSoundEnabled = persistence.setSwipeSoundEnabled(value)
+        applySwipeSoundPreference()
     }
 
     func setReactionServerEnabled(_ value: Bool) {
@@ -251,7 +251,7 @@ final class PetAppModel: ObservableObject {
         }
     }
 
-    func handleMeowGesture() {
+    func handleSoundGesture() {
         NSLog("[PetNative] pet interaction received; soundEnabled=\(soundEnabled)")
 
         guard soundEnabled else {
@@ -259,11 +259,11 @@ final class PetAppModel: ObservableObject {
         }
 
         let now = Date()
-        if let lastMeowAt, now.timeIntervalSince(lastMeowAt) < AppConstants.meowDebounceInterval {
+        if let lastSoundAt, now.timeIntervalSince(lastSoundAt) < AppConstants.soundDebounceInterval {
             return
         }
 
-        lastMeowAt = now
+        lastSoundAt = now
         audioService.playRandomSound()
     }
 
@@ -310,12 +310,12 @@ final class PetAppModel: ObservableObject {
         }
     }
 
-    private func applySwipeMeowPreference() {
+    private func applySwipeSoundPreference() {
         guard started else {
             return
         }
 
-        if swipeMeowEnabled {
+        if swipeSoundEnabled {
             gestureMonitor.start()
         } else {
             gestureMonitor.stop()

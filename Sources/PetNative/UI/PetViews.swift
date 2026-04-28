@@ -18,7 +18,7 @@ struct ContentView: View {
         .frame(width: AppConstants.windowSize.width, height: AppConstants.windowSize.height)
         .background(WindowAccessor { model.attachWindow($0) })
         .onTapGesture {
-            model.handleMeowGesture()
+            model.handleSoundGesture()
         }
         .contextMenu {
             Button("Settings...") {
@@ -94,7 +94,6 @@ struct PetStageView: View {
         }
         .frame(width: 220, height: 220, alignment: .bottom)
         .modifier(StageSunTintModifier(sunPhase: worldState.sunPhase))
-        .animation(.easeOut(duration: 0.18), value: worldState.weather.condition)
         .animation(.easeOut(duration: 0.18), value: worldState.sunPhase)
         .animation(.easeOut(duration: 0.18), value: showReaction)
         .onChange(of: reactionToken) { _, token in
@@ -107,7 +106,7 @@ struct PetStageView: View {
     }
 
     private var auraView: some View {
-        let colors = auraColors(weather: worldState.weather.condition, sunPhase: worldState.sunPhase)
+        let colors = auraColors(sunPhase: worldState.sunPhase)
 
         return ZStack {
             Circle()
@@ -146,21 +145,13 @@ struct PetStageView: View {
         }
     }
 
-    private func auraColors(weather: WeatherCondition, sunPhase: SunPhase) -> (primary: Color, secondary: Color) {
-        switch (weather, sunPhase) {
-        case (.cloudy, _):
-            return (Color(red: 0.81, green: 0.9, blue: 1, opacity: 0.18), Color(red: 0.74, green: 0.8, blue: 0.92, opacity: 0.10))
-        case (.rain, _):
-            return (Color(red: 0.47, green: 0.7, blue: 1, opacity: 0.20), Color(red: 0.43, green: 0.95, blue: 1, opacity: 0.12))
-        case (.snow, _):
-            return (Color(red: 0.89, green: 0.96, blue: 1, opacity: 0.22), Color(red: 0.70, green: 0.84, blue: 1, opacity: 0.12))
-        case (.storm, _):
-            return (Color(red: 0.50, green: 0.6, blue: 1, opacity: 0.20), Color(red: 0.47, green: 1, blue: 0.89, opacity: 0.10))
-        case (_, .night):
+    private func auraColors(sunPhase: SunPhase) -> (primary: Color, secondary: Color) {
+        switch sunPhase {
+        case .night:
             return (Color(red: 0.52, green: 0.66, blue: 1, opacity: 0.14), Color(red: 0.42, green: 0.92, blue: 1, opacity: 0.09))
-        case (_, .golden), (_, .dusk):
+        case .golden, .dusk:
             return (Color(red: 1, green: 0.77, blue: 0.47, opacity: 0.18), Color(red: 1, green: 0.56, blue: 0.47, opacity: 0.10))
-        case (_, .dawn):
+        case .dawn:
             return (Color(red: 1, green: 0.8, blue: 0.60, opacity: 0.18), Color(red: 1, green: 0.9, blue: 0.74, opacity: 0.11))
         default:
             return (Color(red: 0.48, green: 0.89, blue: 0.82, opacity: 0.18), Color(red: 1, green: 0.82, blue: 0.49, opacity: 0.12))
