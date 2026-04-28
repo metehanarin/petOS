@@ -7,7 +7,7 @@ final class PetAudioService {
 
     init() {
         for i in 1...10 {
-            if let player = Self.loadPlayer(resourceName: "meow\(i)", fileExtension: "mp3") {
+            if let player = Self.loadPlayer(resourceName: "shiba\(i)", fileExtension: "mp3") {
                 players.append(player)
             }
         }
@@ -20,7 +20,7 @@ final class PetAudioService {
             }
         }
 
-        if players.isEmpty, let player = Self.loadPlayer(resourceName: "meow", fileExtension: "mp3") {
+        if players.isEmpty, let player = Self.loadPlayer(resourceName: "shiba1", fileExtension: "mp3") {
             players.append(player)
         }
 
