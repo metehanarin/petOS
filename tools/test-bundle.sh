@@ -3,11 +3,11 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-BUNDLE_DIR="$REPO_ROOT/.build/bundle/PetNative.app"
-APP_BINARY="$BUNDLE_DIR/Contents/MacOS/PetNative"
+BUNDLE_DIR="${PETOS_BUNDLE_DIR:-/private/tmp/petOS/petOS.app}"
+APP_BINARY="$BUNDLE_DIR/Contents/MacOS/petOS"
 INFO_PLIST="$BUNDLE_DIR/Contents/Info.plist"
-RESOURCE_BUNDLE="$BUNDLE_DIR/Contents/Resources/PetNative_PetNative.bundle"
-EXPECTED_BUNDLE_ID="com.petnative.PetNative"
+RESOURCE_BUNDLE="$BUNDLE_DIR/Contents/Resources/petOS_petOS.bundle"
+EXPECTED_BUNDLE_ID="com.petos.petOS"
 
 # shellcheck source=tools/_bundle.sh
 source "$SCRIPT_DIR/_bundle.sh"
@@ -43,8 +43,8 @@ if [[ ! -d "$RESOURCE_BUNDLE" ]]; then
 fi
 echo "[bundle] OK resource bundle"
 
-if [[ ! -f "$RESOURCE_BUNDLE/meow.mp3" ]]; then
-  echo "[bundle] error: missing resource: $RESOURCE_BUNDLE/meow.mp3" >&2
+if [[ ! -f "$RESOURCE_BUNDLE/shiba1.mp3" ]]; then
+  echo "[bundle] error: missing resource: $RESOURCE_BUNDLE/shiba1.mp3" >&2
   exit 1
 fi
 echo "[bundle] OK sound resource"

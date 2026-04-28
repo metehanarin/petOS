@@ -169,7 +169,7 @@ final class ReactionServer {
         requestedPort = port
         self.host = host
         boundPort = port
-        queue = DispatchQueue(label: "PetNative.ReactionServer")
+        queue = DispatchQueue(label: "petOS.ReactionServer")
         self.onAcceptedEvent = onAcceptedEvent
     }
 

@@ -3,8 +3,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-BUNDLE_DIR="$REPO_ROOT/.build/bundle/PetNative.app"
-APP_BINARY="$BUNDLE_DIR/Contents/MacOS/PetNative"
+BUNDLE_DIR="${PETOS_BUNDLE_DIR:-/private/tmp/petOS/petOS.app}"
+APP_BINARY="$BUNDLE_DIR/Contents/MacOS/petOS"
 
 clean=false
 args=()
@@ -35,8 +35,8 @@ source "$SCRIPT_DIR/_bundle.sh"
 
 bundle_mode=""
 if [[ -f "$BUNDLE_DIR/Contents/Info.plist" ]]; then
-  fingerprint_file="$BUNDLE_DIR/Contents/Resources/.petnative-resource-fingerprint"
-  resource_bundle="$BUNDLE_DIR/Contents/Resources/PetNative_PetNative.bundle"
+  fingerprint_file="$BUNDLE_DIR/Contents/Resources/.petos-resource-fingerprint"
+  resource_bundle="$BUNDLE_DIR/Contents/Resources/petOS_petOS.bundle"
   current_fingerprint="$(resource_fingerprint)"
   stored_fingerprint=""
   if [[ -f "$fingerprint_file" ]]; then

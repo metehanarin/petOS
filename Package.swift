@@ -4,19 +4,19 @@
 import PackageDescription
 
 let package = Package(
-    name: "PetNative",
+    name: "petOS",
     platforms: [
         .macOS(.v14)
     ],
     products: [
         .executable(
-            name: "PetNative",
-            targets: ["PetNative"]
+            name: "petOS",
+            targets: ["petOS"]
         )
     ],
     targets: [
         .executableTarget(
-            name: "PetNative",
+            name: "petOS",
             exclude: [
                 "Info.plist"
             ],
@@ -28,13 +28,13 @@ let package = Package(
                     "-Xlinker", "-sectcreate",
                     "-Xlinker", "__TEXT",
                     "-Xlinker", "__info_plist",
-                    "-Xlinker", "Sources/PetNative/Info.plist"
+                    "-Xlinker", "Sources/petOS/Info.plist"
                 ])
             ]
         ),
         .testTarget(
-            name: "PetNativeTests",
-            dependencies: ["PetNative"]
+            name: "petOSTests",
+            dependencies: ["petOS"]
         ),
     ]
 )

@@ -22,7 +22,7 @@ final class PetMonitorCoordinator {
     private var requestedFocusAuthorization = false
     private var requestedAccessibilityAuthorization = false
     private var canReadFocusModeFiles = true
-    private let focusLog = Logger(subsystem: "com.petnative.focus", category: "pipeline")
+    private let focusLog = Logger(subsystem: "com.petos.focus", category: "pipeline")
 
     init(
         model: PetAppModel,
@@ -173,11 +173,11 @@ final class PetMonitorCoordinator {
                 app.activationPolicy == .regular,
                 let name = app.localizedName
             else {
-                NSLog("[PetNative] app-activated: skipped (accessory or no name)")
+                NSLog("[petOS] app-activated: skipped (accessory or no name)")
                 return
             }
             let appName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-            NSLog("[PetNative] app-activated: '%@'", appName)
+            NSLog("[petOS] app-activated: '%@'", appName)
             Task { @MainActor [weak self] in
                 self?.model?.updateWorldState { state in
                     state.activity.frontApp = appName
@@ -452,7 +452,7 @@ final class PetMonitorCoordinator {
                 return nil
             } else {
                 focusLog.debug("assertions.read.error error=\(error.localizedDescription, privacy: .private)")
-                NSLog("[PetNative] focus mode lookup failed; inspect com.petnative.focus logs for details.")
+                NSLog("[petOS] focus mode lookup failed; inspect com.petos.focus logs for details.")
             }
             return nil
         }
@@ -673,7 +673,7 @@ extension PetMonitorCoordinator {
 final class NotificationLogMonitor: @unchecked Sendable {
     var onDelivery: ((NotificationDelivery) -> Void)?
 
-    private let queue = DispatchQueue(label: "PetNative.NotificationLogMonitor")
+    private let queue = DispatchQueue(label: "petOS.NotificationLogMonitor")
     private var process: Process?
     private var stdoutHandle: FileHandle?
     private var stderrHandle: FileHandle?
@@ -751,7 +751,7 @@ final class NotificationLogMonitor: @unchecked Sendable {
             }
             let stderr = String(decoding: data, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
             if !stderr.isEmpty {
-                NSLog("[PetNative] notification log stderr: \(stderr)")
+                NSLog("[petOS] notification log stderr: \(stderr)")
             }
         }
 
@@ -768,7 +768,7 @@ final class NotificationLogMonitor: @unchecked Sendable {
         do {
             try process.run()
         } catch {
-            NSLog("[PetNative] notification monitor failed to launch: \(error.localizedDescription)")
+            NSLog("[petOS] notification monitor failed to launch: \(error.localizedDescription)")
             scheduleRestart()
         }
     }

@@ -58,7 +58,7 @@ final class PetGestureMonitor {
             self?.handle(event: event, source: "global")
         }
 
-        NSLog("[PetNative] PetGestureMonitor started; local=\(localMonitor != nil) global=\(globalMonitor != nil)")
+        NSLog("[petOS] PetGestureMonitor started; local=\(localMonitor != nil) global=\(globalMonitor != nil)")
     }
 
     func stop() {
@@ -75,14 +75,14 @@ final class PetGestureMonitor {
     private func handle(event: NSEvent, source: String) {
         switch event.type {
         case .swipe:
-            NSLog("[PetNative] \(source) .swipe deltaY=\(event.deltaY)")
+            NSLog("[petOS] \(source) .swipe deltaY=\(event.deltaY)")
             if event.deltaY == -1 {
                 onSwipeDown()
             }
         case .scrollWheel:
             let touches = event.allTouches().count
             if touches > 0 || event.phase == .began || event.phase == .ended {
-                NSLog("[PetNative] \(source) .scrollWheel touches=\(touches) deltaY=\(event.scrollingDeltaY) phase=\(event.phase.rawValue)")
+                NSLog("[petOS] \(source) .scrollWheel touches=\(touches) deltaY=\(event.scrollingDeltaY) phase=\(event.phase.rawValue)")
             }
             handleScroll(event: event)
         default:
@@ -103,7 +103,7 @@ final class PetGestureMonitor {
             }
             panAccumulatedDeltaY += event.scrollingDeltaY
         case .ended:
-            NSLog("[PetNative] pan ended fingers=\(panFingerCount) totalDeltaY=\(panAccumulatedDeltaY)")
+            NSLog("[petOS] pan ended fingers=\(panFingerCount) totalDeltaY=\(panAccumulatedDeltaY)")
             if panFingerCount >= 3, panAccumulatedDeltaY < -40 {
                 onSwipeDown()
             }

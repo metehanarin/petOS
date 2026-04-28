@@ -5,15 +5,15 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleExecutable</key>
-	<string>PetNative</string>
+	<string>petOS</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.petnative.PetNative</string>
+	<string>com.petos.petOS</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>PetNative</string>
+	<string>petOS</string>
 	<key>CFBundleDisplayName</key>
-	<string>PetNative</string>
+	<string>petOS</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -29,16 +29,16 @@
 	<key>NSSupportsAutomaticGraphicsSwitching</key>
 	<true/>
 	<key>NSAppleEventsUsageDescription</key>
-	<string>PetNative reads upcoming Calendar events and now-playing music metadata to choose the pet's mood.</string>
+	<string>petOS reads upcoming Calendar events and now-playing music metadata to choose the pet's mood.</string>
 	<key>NSFocusStatusUsageDescription</key>
-	<string>PetNative checks whether a Focus mode is active so the pet quiets down during deep work.</string>
+	<string>petOS checks whether a Focus mode is active so the pet quiets down during deep work.</string>
 	<key>NSCalendarsUsageDescription</key>
-	<string>PetNative reads upcoming Calendar events to reflect your schedule in the pet's behavior.</string>
+	<string>petOS reads upcoming Calendar events to reflect your schedule in the pet's behavior.</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>
-	<string>PetNative reads upcoming Calendar events to reflect your schedule in the pet's behavior.</string>
+	<string>petOS reads upcoming Calendar events to reflect your schedule in the pet's behavior.</string>
 	<key>NSSystemAdministrationUsageDescription</key>
-	<string>PetNative observes notification delivery log entries to react to notifications you receive.</string>
+	<string>petOS observes notification delivery log entries to react to notifications you receive.</string>
 	<key>NSAccessibilityUsageDescription</key>
-	<string>PetNative uses Accessibility to detect gestures (like swiping down) even when it is not the active app.</string>
+	<string>petOS uses Accessibility to detect gestures (like swiping down) even when it is not the active app.</string>
 </dict>
 </plist>

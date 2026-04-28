@@ -1,5 +1,5 @@
 import Foundation
-@testable import PetNative
+@testable import petOS
 
 enum PetTestSupport {
     static func makeState(_ update: (inout WorldState) -> Void = { _ in }) -> WorldState {
@@ -20,7 +20,7 @@ enum PetTestSupport {
 
     static func temporaryFileURL(name: String = UUID().uuidString) -> URL {
         FileManager.default.temporaryDirectory
-            .appendingPathComponent("PetNativeTests", isDirectory: true)
+            .appendingPathComponent("petOSTests", isDirectory: true)
             .appendingPathComponent("\(name).json")
     }
 

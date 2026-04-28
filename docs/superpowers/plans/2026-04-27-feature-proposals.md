@@ -1,14 +1,14 @@
-# PetNative — 10 Feature Proposals
+# petOS — 10 Feature Proposals
 
 **Date:** 2026-04-27  
 **Status:** Draft — awaiting review  
-**Scope:** PetNative (Sources/PetNative)
+**Scope:** petOS (Sources/petOS)
 
 ---
 
 ## Overview
 
-Ten proposed additions to PetNative, ordered by a blend of "cool factor" and feasibility. Each proposal includes a description, technical approach, integration points with the existing codebase, and estimated effort.
+Ten proposed additions to petOS, ordered by a blend of "cool factor" and feasibility. Each proposal includes a description, technical approach, integration points with the existing codebase, and estimated effort.
 
 ---
 
@@ -66,7 +66,7 @@ The pet becomes a visual Pomodoro clock. During a focus session the pet enters a
 |---|---|
 | `PetAppModel` | Owns `PetPomodoroTimer`, new mood override path |
 | `PetMoodEngine` | New `Reason` cases for pomodoro states |
-| `PetNativeApp` | Start/stop buttons in menu bar extra |
+| `petOSApp` | Start/stop buttons in menu bar extra |
 | `SettingsView` | Pomodoro tab with interval configuration |
 | `PetReactionServer` | New `/pomodoro` endpoint to start/stop remotely |
 
@@ -234,7 +234,7 @@ Each trick is a scripted animation sequence that temporarily overrides the curre
 | `PetAppModel` | `activeTrick` state, trick execution queue |
 | `PetSpriteView` | Trick sprite configurations |
 | `PetViews` | Context menu submenu |
-| `PetNativeApp` | Command menu entries |
+| `petOSApp` | Command menu entries |
 | `PetReactionServer` | Trick types recognized in validator |
 
 ### Effort: **High** — needs sprite assets per trick + hotkey system
@@ -317,7 +317,7 @@ A curated set of context-aware phrases displayed as a floating pill above the pe
 
 **Deep integration with macOS Shortcuts app — expose pet actions as Shortcut actions and allow users to build custom automations.**
 
-Expose key PetNative operations as `AppIntent`s so they appear in the Shortcuts app. Users can build automations like "When I arrive home → pet does a happy dance" or "Every day at 9am → show my mood summary".
+Expose key petOS operations as `AppIntent`s so they appear in the Shortcuts app. Users can build automations like "When I arrive home → pet does a happy dance" or "Every day at 9am → show my mood summary".
 
 ### Technical Approach
 

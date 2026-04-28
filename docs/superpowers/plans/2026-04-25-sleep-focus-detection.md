@@ -14,7 +14,7 @@
 
 ## Preconditions
 
-- macOS 14+ (LSMinimumSystemVersion in `Sources/PetNative/Info.plist`).
+- macOS 14+ (LSMinimumSystemVersion in `Sources/petOS/Info.plist`).
 - `swift --version` reports 6.2 or newer.
 - `codesign` available (ships with Xcode Command Line Tools).
 - Working directory `/Users/metehanarin/Documents/petOS` is the repo root.
@@ -38,20 +38,20 @@ All later commit steps assume git is available.
 |---|---|---|
 | `tools/_bundle.sh` | NEW | Shared bash function `build_bundle` that assembles a `.app` directory and ad-hoc codesigns it. |
 | `tools/run.sh` | NEW | Dev runner: builds debug, swaps inner binary into bundle (or full rebuild on `--clean`), execs foreground. |
-| `tools/build-release.sh` | NEW | Release builder: builds release, assembles `.app` into `dist/PetNative.app`. |
+| `tools/build-release.sh` | NEW | Release builder: builds release, assembles `.app` into `dist/petOS.app`. |
 | `tools/test-bundle.sh` | NEW | Smoke test for bundle layout + codesign. |
-| `Sources/PetNative/Logic/PetMoodEngine.swift` | MODIFY | Add `MoodResolution`, `Reason` enum, new `resolveBaseMoodWithReason`. Generalize `isUnidentifiedFocusAssumedAsSleep` with non-sleep exclusion sets. Keep existing `resolveBaseMood(for:)` as thin wrapper. |
-| `Sources/PetNative/Services/PetServices.swift` | MODIFY | Drop `isProperlyBundled()` gates and helper. Replace direct file/AX/INFocus calls in `refreshFocus()` with `FocusSourceProvider`. Add `OSLog` calls. |
-| `Sources/PetNative/Services/FocusSourceProvider.swift` | NEW | Protocol + `LiveFocusSourceProvider` (verbatim wrap of current code paths) for dependency injection. |
-| `Sources/PetNative/Services/PermissionsInspector.swift` | NEW | Read-only TCC status snapshot + `openSystemSettings` deep-links. |
-| `Sources/PetNative/PetLaunchPreflight.swift` | NEW | Startup guard: exits `EX_CONFIG` if not running from a `.app` bundle. |
-| `Sources/PetNative/PetNativeApp.swift` | MODIFY | Invoke preflight before any other startup work. |
-| `Sources/PetNative/PetAppModel.swift` | MODIFY | Use `resolveBaseMoodWithReason`, log `mood.resolved` via `OSLog`. |
-| `Sources/PetNative/UI/SettingsView.swift` | MODIFY | Add "System Access" section bound to `PermissionsInspector.snapshot()` polled every 2s. |
-| `Tests/PetNativeTests/PetMoodEngineTests.swift` | MODIFY | Add 5 new test cases for the tightened fallback. |
-| `Tests/PetNativeTests/FocusPipelineTests.swift` | NEW | Pipeline tests using `FakeFocusSourceProvider`. |
-| `Tests/PetNativeTests/PermissionsInspectorTests.swift` | NEW | Status mapping unit tests. |
-| `README.md` | MODIFY | Replace `swift run PetNative` with `./tools/run.sh`; add "First run" permissions subsection. |
+| `Sources/petOS/Logic/PetMoodEngine.swift` | MODIFY | Add `MoodResolution`, `Reason` enum, new `resolveBaseMoodWithReason`. Generalize `isUnidentifiedFocusAssumedAsSleep` with non-sleep exclusion sets. Keep existing `resolveBaseMood(for:)` as thin wrapper. |
+| `Sources/petOS/Services/PetServices.swift` | MODIFY | Drop `isProperlyBundled()` gates and helper. Replace direct file/AX/INFocus calls in `refreshFocus()` with `FocusSourceProvider`. Add `OSLog` calls. |
+| `Sources/petOS/Services/FocusSourceProvider.swift` | NEW | Protocol + `LiveFocusSourceProvider` (verbatim wrap of current code paths) for dependency injection. |
+| `Sources/petOS/Services/PermissionsInspector.swift` | NEW | Read-only TCC status snapshot + `openSystemSettings` deep-links. |
+| `Sources/petOS/PetLaunchPreflight.swift` | NEW | Startup guard: exits `EX_CONFIG` if not running from a `.app` bundle. |
+| `Sources/petOS/petOSApp.swift` | MODIFY | Invoke preflight before any other startup work. |
+| `Sources/petOS/PetAppModel.swift` | MODIFY | Use `resolveBaseMoodWithReason`, log `mood.resolved` via `OSLog`. |
+| `Sources/petOS/UI/SettingsView.swift` | MODIFY | Add "System Access" section bound to `PermissionsInspector.snapshot()` polled every 2s. |
+| `Tests/petOSTests/PetMoodEngineTests.swift` | MODIFY | Add 5 new test cases for the tightened fallback. |
+| `Tests/petOSTests/FocusPipelineTests.swift` | NEW | Pipeline tests using `FakeFocusSourceProvider`. |
+| `Tests/petOSTests/PermissionsInspectorTests.swift` | NEW | Status mapping unit tests. |
+| `README.md` | MODIFY | Replace `swift run petOS` with `./tools/run.sh`; add "First run" permissions subsection. |
 
 ---
 
@@ -76,7 +76,7 @@ mkdir -p /Users/metehanarin/Documents/petOS/tools
 
 ```bash
 #!/usr/bin/env bash
-# Shared bundling logic for PetNative.
+# Shared bundling logic for petOS.
 # Source this file from another script, then call:
 #   build_bundle <swift-config> <bundle-output-dir> [--inner-only]
 #
@@ -100,11 +100,11 @@ build_bundle() {
     return 2
   fi
 
-  echo "[bundle] swift build -c $config --product PetNative"
-  (cd "$PETOS_REPO_ROOT" && swift build -c "$config" --product PetNative)
+  echo "[bundle] swift build -c $config --product petOS"
+  (cd "$PETOS_REPO_ROOT" && swift build -c "$config" --product petOS)
 
   local built_binary
-  built_binary="$(cd "$PETOS_REPO_ROOT" && swift build -c "$config" --show-bin-path)/PetNative"
+  built_binary="$(cd "$PETOS_REPO_ROOT" && swift build -c "$config" --show-bin-path)/petOS"
   if [[ ! -x "$built_binary" ]]; then
     echo "[bundle] expected binary not found at $built_binary" >&2
     return 1
@@ -118,11 +118,11 @@ build_bundle() {
 
   if [[ "$inner_only" != "--inner-only" || ! -f "$contents/Info.plist" ]]; then
     mkdir -p "$resources_dir"
-    cp "$PETOS_REPO_ROOT/Sources/PetNative/Info.plist" "$contents/Info.plist"
+    cp "$PETOS_REPO_ROOT/Sources/petOS/Info.plist" "$contents/Info.plist"
 
     # Copy SwiftPM-processed resources from the build output
     local pkg_resources
-    pkg_resources="$(cd "$PETOS_REPO_ROOT" && swift build -c "$config" --show-bin-path)/PetNative_PetNative.bundle/Contents/Resources"
+    pkg_resources="$(cd "$PETOS_REPO_ROOT" && swift build -c "$config" --show-bin-path)/petOS_petOS.bundle/Contents/Resources"
     if [[ -d "$pkg_resources" ]]; then
       rm -rf "$resources_dir"
       mkdir -p "$resources_dir"
@@ -130,8 +130,8 @@ build_bundle() {
     fi
   fi
 
-  cp "$built_binary" "$macos_dir/PetNative"
-  chmod +x "$macos_dir/PetNative"
+  cp "$built_binary" "$macos_dir/petOS"
+  chmod +x "$macos_dir/petOS"
 
   echo "[bundle] codesign --force --deep --sign - $bundle_dir"
   codesign --force --deep --sign - "$bundle_dir"
@@ -167,18 +167,18 @@ git commit -m "tools: add shared _bundle.sh helper for .app assembly"
 
 ```bash
 #!/usr/bin/env bash
-# Build PetNative and exec it from a generated .app bundle so TCC grants
+# Build petOS and exec it from a generated .app bundle so TCC grants
 # (Focus, Accessibility, Full Disk Access) have a stable identity to bind to.
 #
 # Usage:
 #   ./tools/run.sh                # debug build, inner-binary swap if bundle exists
 #   ./tools/run.sh --clean        # force full rebuild of the bundle
-#   ./tools/run.sh -- --debug     # extra args after `--` are passed to PetNative
+#   ./tools/run.sh -- --debug     # extra args after `--` are passed to petOS
 
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BUNDLE_DIR="$REPO_ROOT/.build/bundle/PetNative.app"
+BUNDLE_DIR="$REPO_ROOT/.build/bundle/petOS.app"
 
 # shellcheck source=tools/_bundle.sh
 source "$REPO_ROOT/tools/_bundle.sh"
@@ -205,8 +205,8 @@ fi
 
 build_bundle "debug" "$BUNDLE_DIR" "$inner_only_flag"
 
-echo "[run.sh] exec $BUNDLE_DIR/Contents/MacOS/PetNative ${pass_through[*]:-}"
-exec "$BUNDLE_DIR/Contents/MacOS/PetNative" "${pass_through[@]}"
+echo "[run.sh] exec $BUNDLE_DIR/Contents/MacOS/petOS ${pass_through[*]:-}"
+exec "$BUNDLE_DIR/Contents/MacOS/petOS" "${pass_through[@]}"
 ```
 
 - [ ] **Step 2: Make executable**
@@ -222,19 +222,19 @@ cd /Users/metehanarin/Documents/petOS
 ./tools/run.sh
 ```
 
-Expected: Swift builds, bundle is created at `.build/bundle/PetNative.app`, codesign verification passes, and the menu bar icon appears (or, if Focus authorization has never been granted to this bundle ID before, a system prompt asks for Focus access — accept it). Hit Ctrl-C to exit.
+Expected: Swift builds, bundle is created at `.build/bundle/petOS.app`, codesign verification passes, and the menu bar icon appears (or, if Focus authorization has never been granted to this bundle ID before, a system prompt asks for Focus access — accept it). Hit Ctrl-C to exit.
 
 If the build fails, fix the underlying compile error and re-run; do not proceed with later tasks until `./tools/run.sh` reaches the `[run.sh] exec` line cleanly.
 
 - [ ] **Step 4: Verify codesign identity is stable across rebuilds**
 
 ```bash
-codesign -dr - /Users/metehanarin/Documents/petOS/.build/bundle/PetNative.app 2>&1 | rg "designated"
+codesign -dr - /Users/metehanarin/Documents/petOS/.build/bundle/petOS.app 2>&1 | rg "designated"
 ./tools/run.sh   # second run, inner-only swap
-codesign -dr - /Users/metehanarin/Documents/petOS/.build/bundle/PetNative.app 2>&1 | rg "designated"
+codesign -dr - /Users/metehanarin/Documents/petOS/.build/bundle/petOS.app 2>&1 | rg "designated"
 ```
 
-Expected: both `designated => identifier "com.petnative.PetNative"` lines are byte-for-byte identical. If they differ, TCC will demote grants on every rebuild and the whole point of this layer is defeated — investigate before proceeding.
+Expected: both `designated => identifier "com.petos.petOS"` lines are byte-for-byte identical. If they differ, TCC will demote grants on every rebuild and the whole point of this layer is defeated — investigate before proceeding.
 
 - [ ] **Step 5: Commit**
 
@@ -254,13 +254,13 @@ git commit -m "tools: add run.sh dev bundler that preserves TCC identity"
 
 ```bash
 #!/usr/bin/env bash
-# Build PetNative.app for distribution. Output: dist/PetNative.app
+# Build petOS.app for distribution. Output: dist/petOS.app
 
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DIST_DIR="$REPO_ROOT/dist"
-BUNDLE_DIR="$DIST_DIR/PetNative.app"
+BUNDLE_DIR="$DIST_DIR/petOS.app"
 
 # shellcheck source=tools/_bundle.sh
 source "$REPO_ROOT/tools/_bundle.sh"
@@ -284,11 +284,11 @@ chmod +x /Users/metehanarin/Documents/petOS/tools/build-release.sh
 
 ```bash
 ./tools/build-release.sh
-ls dist/PetNative.app/Contents/MacOS/PetNative
-codesign --verify --deep --strict dist/PetNative.app
+ls dist/petOS.app/Contents/MacOS/petOS
+codesign --verify --deep --strict dist/petOS.app
 ```
 
-Expected: `dist/PetNative.app/Contents/MacOS/PetNative` exists; `codesign --verify` exits 0 with no output.
+Expected: `dist/petOS.app/Contents/MacOS/petOS` exists; `codesign --verify` exits 0 with no output.
 
 - [ ] **Step 4: Commit**
 
@@ -314,7 +314,7 @@ git commit -m "tools: add build-release.sh for distribution .app"
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BUNDLE_DIR="$REPO_ROOT/.build/bundle/PetNative.app"
+BUNDLE_DIR="$REPO_ROOT/.build/bundle/petOS.app"
 
 # shellcheck source=tools/_bundle.sh
 source "$REPO_ROOT/tools/_bundle.sh"
@@ -326,12 +326,12 @@ fail() { echo "FAIL: $*" >&2; exit 1; }
 ok()   { echo "OK: $*"; }
 
 [[ -f "$BUNDLE_DIR/Contents/Info.plist" ]]            || fail "Info.plist missing"
-[[ -x "$BUNDLE_DIR/Contents/MacOS/PetNative" ]]       || fail "executable missing or not +x"
+[[ -x "$BUNDLE_DIR/Contents/MacOS/petOS" ]]       || fail "executable missing or not +x"
 codesign --verify --deep --strict "$BUNDLE_DIR"       || fail "codesign verify failed"
 
 # Verify bundle ID matches what TCC will key against
 bundle_id="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$BUNDLE_DIR/Contents/Info.plist")"
-[[ "$bundle_id" == "com.petnative.PetNative" ]]       || fail "unexpected bundle id: $bundle_id"
+[[ "$bundle_id" == "com.petos.petOS" ]]       || fail "unexpected bundle id: $bundle_id"
 
 ok "bundle layout"
 ok "executable present"
@@ -365,11 +365,11 @@ git commit -m "tools: add bundle smoke test"
 ### Task 2.1: Add `MoodResolution` + `Reason`, keep legacy signature
 
 **Files:**
-- Modify: `Sources/PetNative/Logic/PetMoodEngine.swift`
+- Modify: `Sources/petOS/Logic/PetMoodEngine.swift`
 
 - [ ] **Step 1: Write the failing test**
 
-Append to `Tests/PetNativeTests/PetMoodEngineTests.swift` (inside the `PetMoodEngineTests` struct):
+Append to `Tests/petOSTests/PetMoodEngineTests.swift` (inside the `PetMoodEngineTests` struct):
 
 ```swift
 @Test
@@ -397,7 +397,7 @@ Expected: build error — `resolveBaseMoodWithReason` is undefined. That's the f
 
 - [ ] **Step 3: Implement `MoodResolution`, `Reason`, and `resolveBaseMoodWithReason`**
 
-Edit `Sources/PetNative/Logic/PetMoodEngine.swift`. Replace the body of `enum PetMoodEngine` (top of the file, lines 3–52) with the version below. (Identifier-/name-normalization helpers below the function stay unchanged.)
+Edit `Sources/petOS/Logic/PetMoodEngine.swift`. Replace the body of `enum PetMoodEngine` (top of the file, lines 3–52) with the version below. (Identifier-/name-normalization helpers below the function stay unchanged.)
 
 ```swift
 enum PetMoodEngine {
@@ -525,18 +525,18 @@ Expected: all pre-existing `PetMoodEngineTests` cases still pass (the legacy `re
 - [ ] **Step 6: Commit**
 
 ```bash
-git add Sources/PetNative/Logic/PetMoodEngine.swift Tests/PetNativeTests/PetMoodEngineTests.swift
+git add Sources/petOS/Logic/PetMoodEngine.swift Tests/petOSTests/PetMoodEngineTests.swift
 git commit -m "engine: introduce MoodResolution with diagnostic reason"
 ```
 
 ### Task 2.2: Log `mood.resolved` from `PetAppModel`
 
 **Files:**
-- Modify: `Sources/PetNative/PetAppModel.swift`
+- Modify: `Sources/petOS/PetAppModel.swift`
 
 - [ ] **Step 1: Add the logger import + property**
 
-Add to imports at top of `Sources/PetNative/PetAppModel.swift`:
+Add to imports at top of `Sources/petOS/PetAppModel.swift`:
 
 ```swift
 import os
@@ -545,7 +545,7 @@ import os
 Inside the `PetAppModel` class, near the other private properties:
 
 ```swift
-private let moodLog = Logger(subsystem: "com.petnative.focus", category: "mood")
+private let moodLog = Logger(subsystem: "com.petos.focus", category: "mood")
 ```
 
 - [ ] **Step 2: Replace mood-recompute callsites to use `MoodResolution`**
@@ -599,7 +599,7 @@ Expected: all pass.
 ./tools/run.sh &
 APP_PID=$!
 sleep 3
-log show --predicate 'subsystem == "com.petnative.focus"' --last 10s --info --debug | head -20
+log show --predicate 'subsystem == "com.petos.focus"' --last 10s --info --debug | head -20
 kill $APP_PID
 ```
 
@@ -608,14 +608,14 @@ Expected: at least one line shaped like `mood.resolved mood=idle reason=idle_def
 - [ ] **Step 6: Commit**
 
 ```bash
-git add Sources/PetNative/PetAppModel.swift
+git add Sources/petOS/PetAppModel.swift
 git commit -m "model: log mood.resolved with diagnostic reason via OSLog"
 ```
 
 ### Task 2.3: Add focus-pipeline `OSLog` instrumentation
 
 **Files:**
-- Modify: `Sources/PetNative/Services/PetServices.swift`
+- Modify: `Sources/petOS/Services/PetServices.swift`
 
 - [ ] **Step 1: Add the logger**
 
@@ -628,7 +628,7 @@ import os
 Inside `PetMonitorCoordinator`, near other private properties:
 
 ```swift
-private let focusLog = Logger(subsystem: "com.petnative.focus", category: "pipeline")
+private let focusLog = Logger(subsystem: "com.petos.focus", category: "pipeline")
 ```
 
 - [ ] **Step 2: Instrument `readCurrentFocusMode()`**
@@ -664,7 +664,7 @@ private func readCurrentFocusMode() -> FocusModeDescriptor? {
             return nil
         } else {
             focusLog.debug("assertions.read.error error=\(error.localizedDescription, privacy: .public)")
-            NSLog("[PetNative] focus mode lookup failed: \(error.localizedDescription)")
+            NSLog("[petOS] focus mode lookup failed: \(error.localizedDescription)")
         }
         return nil
     }
@@ -733,7 +733,7 @@ Expected: clean build.
 ./tools/run.sh &
 APP_PID=$!
 sleep 3
-log show --predicate 'subsystem == "com.petnative.focus"' --last 10s --info --debug | head -40
+log show --predicate 'subsystem == "com.petos.focus"' --last 10s --info --debug | head -40
 kill $APP_PID
 ```
 
@@ -742,7 +742,7 @@ Expected: at least one `focus.resolved` line and one of `assertions.read.*`, `co
 - [ ] **Step 7: Commit**
 
 ```bash
-git add Sources/PetNative/Services/PetServices.swift
+git add Sources/petOS/Services/PetServices.swift
 git commit -m "services: add OSLog instrumentation across focus pipeline"
 ```
 
@@ -755,12 +755,12 @@ git commit -m "services: add OSLog instrumentation across focus pipeline"
 ### Task 3.1: Add startup preflight
 
 **Files:**
-- Create: `Sources/PetNative/PetLaunchPreflight.swift`
-- Modify: `Sources/PetNative/PetNativeApp.swift`
+- Create: `Sources/petOS/PetLaunchPreflight.swift`
+- Modify: `Sources/petOS/petOSApp.swift`
 
 - [ ] **Step 1: Write the preflight**
 
-`Sources/PetNative/PetLaunchPreflight.swift`:
+`Sources/petOS/PetLaunchPreflight.swift`:
 
 ```swift
 import Foundation
@@ -778,7 +778,7 @@ enum PetLaunchPreflight {
 
         fputs(
             """
-            [PetNative] FATAL: this binary must be launched from an .app bundle.
+            [petOS] FATAL: this binary must be launched from an .app bundle.
             Use ./tools/run.sh (dev) or ./tools/build-release.sh (release).
             Detected bundle path: \(path)
 
@@ -792,7 +792,7 @@ enum PetLaunchPreflight {
 
 - [ ] **Step 2: Wire into app entry point**
 
-In `Sources/PetNative/PetNativeApp.swift`, change the stored model property and add an explicit `init` so the preflight runs before `PetAppModel()` is constructed. Replace:
+In `Sources/petOS/petOSApp.swift`, change the stored model property and add an explicit `init` so the preflight runs before `PetAppModel()` is constructed. Replace:
 
 ```swift
 @StateObject private var model = PetAppModel()
@@ -815,7 +815,7 @@ Do not move the `@NSApplicationDelegateAdaptor` property or change the `body` sc
 
 ```bash
 swift build
-.build/debug/PetNative
+.build/debug/petOS
 echo "exit=$?"
 ```
 
@@ -836,14 +836,14 @@ Expected: `running`.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/PetNative/PetLaunchPreflight.swift Sources/PetNative/PetNativeApp.swift
+git add Sources/petOS/PetLaunchPreflight.swift Sources/petOS/petOSApp.swift
 git commit -m "app: enforce bundled execution at startup"
 ```
 
 ### Task 3.2: Drop `isProperlyBundled()` gates
 
 **Files:**
-- Modify: `Sources/PetNative/Services/PetServices.swift`
+- Modify: `Sources/petOS/Services/PetServices.swift`
 
 - [ ] **Step 1: Remove the gate in `refreshFocus()`**
 
@@ -900,7 +900,7 @@ private func accessibilityTrustedForControlCenterLookup() -> Bool {
 Remove the entire `isProperlyBundled()` function (currently lines 639–652) — it has no remaining callers. Verify with:
 
 ```bash
-rg -n isProperlyBundled Sources/PetNative/Services/PetServices.swift
+rg -n isProperlyBundled Sources/petOS/Services/PetServices.swift
 ```
 
 Expected: no output.
@@ -924,15 +924,15 @@ Expected: on first run after this change (and if prior grants for this bundle ID
 - [ ] **Step 6: Commit**
 
 ```bash
-git add Sources/PetNative/Services/PetServices.swift
+git add Sources/petOS/Services/PetServices.swift
 git commit -m "services: drop isProperlyBundled gates now that bundling is mandatory"
 ```
 
 ### Task 3.3: Tighten the engine fallback
 
 **Files:**
-- Modify: `Sources/PetNative/Logic/PetMoodEngine.swift`
-- Modify: `Tests/PetNativeTests/PetMoodEngineTests.swift`
+- Modify: `Sources/petOS/Logic/PetMoodEngine.swift`
+- Modify: `Tests/petOSTests/PetMoodEngineTests.swift`
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -1014,7 +1014,7 @@ Expected: `sleepingResolvesWhenFocusActiveWithSleepNameOnly` already passes (cur
 
 - [ ] **Step 3: Implement the tightened fallback**
 
-In `Sources/PetNative/Logic/PetMoodEngine.swift`, add these constants near the other `static let` declarations:
+In `Sources/petOS/Logic/PetMoodEngine.swift`, add these constants near the other `static let` declarations:
 
 ```swift
 private static let nonSleepFocusIdentifiers: Set<String> = [
@@ -1076,7 +1076,7 @@ If `nonSleepFocusDoesNotResolveToSleepingOutsideOvernightWindow` (line 157 of th
 APP_PID=$!
 # Manually turn on Sleep Focus from Control Center.
 sleep 5
-log show --predicate 'subsystem == "com.petnative.focus"' --last 10s --info --debug | rg mood.resolved | tail -3
+log show --predicate 'subsystem == "com.petos.focus"' --last 10s --info --debug | rg mood.resolved | tail -3
 kill $APP_PID
 ```
 
@@ -1085,7 +1085,7 @@ Expected: at least one `mood.resolved mood=sleeping reason=sleep_focus_explicit`
 - [ ] **Step 6: Commit**
 
 ```bash
-git add Sources/PetNative/Logic/PetMoodEngine.swift Tests/PetNativeTests/PetMoodEngineTests.swift
+git add Sources/petOS/Logic/PetMoodEngine.swift Tests/petOSTests/PetMoodEngineTests.swift
 git commit -m "engine: generalize unidentified-focus fallback with non-sleep exclusion sets"
 ```
 
@@ -1098,12 +1098,12 @@ git commit -m "engine: generalize unidentified-focus fallback with non-sleep exc
 ### Task 4.1: Extract `FocusSourceProvider`
 
 **Files:**
-- Create: `Sources/PetNative/Services/FocusSourceProvider.swift`
-- Modify: `Sources/PetNative/Services/PetServices.swift`
+- Create: `Sources/petOS/Services/FocusSourceProvider.swift`
+- Modify: `Sources/petOS/Services/PetServices.swift`
 
 - [ ] **Step 1: Write the protocol + live impl**
 
-`Sources/PetNative/Services/FocusSourceProvider.swift`:
+`Sources/petOS/Services/FocusSourceProvider.swift`:
 
 ```swift
 import Foundation
@@ -1126,7 +1126,7 @@ protocol FocusSourceProvider: AnyObject {
 
 - [ ] **Step 2: Move the existing implementations into a `LiveFocusSourceProvider`**
 
-Append to `Sources/PetNative/Services/FocusSourceProvider.swift`:
+Append to `Sources/petOS/Services/FocusSourceProvider.swift`:
 
 ```swift
 final class LiveFocusSourceProvider: FocusSourceProvider {
@@ -1244,24 +1244,24 @@ Expected: all pass (no test currently exercises `refreshFocus` directly, so the 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add Sources/PetNative/Services/FocusSourceProvider.swift Sources/PetNative/Services/PetServices.swift
+git add Sources/petOS/Services/FocusSourceProvider.swift Sources/petOS/Services/PetServices.swift
 git commit -m "services: extract FocusSourceProvider for pipeline injection"
 ```
 
 ### Task 4.2: Add `FocusPipelineTests` with a fake provider
 
 **Files:**
-- Create: `Tests/PetNativeTests/FocusPipelineTests.swift`
-- Modify: `Sources/PetNative/Services/PetServices.swift`
+- Create: `Tests/petOSTests/FocusPipelineTests.swift`
+- Modify: `Sources/petOS/Services/PetServices.swift`
 
 - [ ] **Step 1: Write the test file**
 
-`Tests/PetNativeTests/FocusPipelineTests.swift`:
+`Tests/petOSTests/FocusPipelineTests.swift`:
 
 ```swift
 import Foundation
 import Testing
-@testable import PetNative
+@testable import petOS
 
 @MainActor
 struct FocusPipelineTests {
@@ -1352,7 +1352,7 @@ final class FakeFocusSourceProvider: FocusSourceProvider {
 
 - [ ] **Step 2: Add the test-only focus refresh helper**
 
-Add to `Sources/PetNative/Services/PetServices.swift`:
+Add to `Sources/petOS/Services/PetServices.swift`:
 
 ```swift
 #if DEBUG
@@ -1384,24 +1384,24 @@ Expected: all tests pass.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Tests/PetNativeTests/FocusPipelineTests.swift Sources/PetNative/Services/PetServices.swift
+git add Tests/petOSTests/FocusPipelineTests.swift Sources/petOS/Services/PetServices.swift
 git commit -m "tests: add FocusPipelineTests covering provider injection paths"
 ```
 
 ### Task 4.3: `PermissionsInspector`
 
 **Files:**
-- Create: `Sources/PetNative/Services/PermissionsInspector.swift`
-- Create: `Tests/PetNativeTests/PermissionsInspectorTests.swift`
+- Create: `Sources/petOS/Services/PermissionsInspector.swift`
+- Create: `Tests/petOSTests/PermissionsInspectorTests.swift`
 
 - [ ] **Step 1: Write the failing test**
 
-`Tests/PetNativeTests/PermissionsInspectorTests.swift`:
+`Tests/petOSTests/PermissionsInspectorTests.swift`:
 
 ```swift
 import Foundation
 import Testing
-@testable import PetNative
+@testable import petOS
 
 struct PermissionsInspectorTests {
     @Test
@@ -1435,7 +1435,7 @@ Expected: build error — `PermissionsInspector` undefined.
 
 - [ ] **Step 3: Write the inspector**
 
-`Sources/PetNative/Services/PermissionsInspector.swift`:
+`Sources/petOS/Services/PermissionsInspector.swift`:
 
 ```swift
 import AppKit
@@ -1539,14 +1539,14 @@ Expected: both pass.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/PetNative/Services/PermissionsInspector.swift Tests/PetNativeTests/PermissionsInspectorTests.swift
+git add Sources/petOS/Services/PermissionsInspector.swift Tests/petOSTests/PermissionsInspectorTests.swift
 git commit -m "services: add PermissionsInspector for read-only TCC status"
 ```
 
 ### Task 4.4: Surface permissions in Settings
 
 **Files:**
-- Modify: `Sources/PetNative/UI/SettingsView.swift`
+- Modify: `Sources/petOS/UI/SettingsView.swift`
 
 - [ ] **Step 1: Add a "System Access" section**
 
@@ -1652,7 +1652,7 @@ Open the menu bar → Settings… → confirm a "System Access" section is prese
 - [ ] **Step 4: Commit**
 
 ```bash
-git add Sources/PetNative/UI/SettingsView.swift
+git add Sources/petOS/UI/SettingsView.swift
 git commit -m "ui: add System Access section to Settings with live TCC status"
 ```
 
@@ -1673,9 +1673,9 @@ cd /Users/metehanarin/Documents/petOS
 ./tools/run.sh
 ```
 
-This bundles PetNative into a real `.app` so macOS TCC can persist Focus / Accessibility / Full Disk Access grants across rebuilds. Running the binary directly via `swift run` will exit with `EX_CONFIG` (78) — use `./tools/run.sh` instead.
+This bundles petOS into a real `.app` so macOS TCC can persist Focus / Accessibility / Full Disk Access grants across rebuilds. Running the binary directly via `swift run` will exit with `EX_CONFIG` (78) — use `./tools/run.sh` instead.
 
-Pass extra args to PetNative after `--`:
+Pass extra args to petOS after `--`:
 
 ```bash
 ./tools/run.sh -- --debug
@@ -1691,12 +1691,12 @@ Build a distributable bundle:
 
 ```bash
 ./tools/build-release.sh
-# Output: dist/PetNative.app
+# Output: dist/petOS.app
 ```
 
 ### First run — system permissions
 
-PetNative needs three macOS permissions for full Sleep Focus detection. On first launch, accept the prompts that appear, or grant them manually in System Settings → Privacy & Security:
+petOS needs three macOS permissions for full Sleep Focus detection. On first launch, accept the prompts that appear, or grant them manually in System Settings → Privacy & Security:
 
 | Permission | What it enables | If denied |
 |---|---|---|
@@ -1707,7 +1707,7 @@ PetNative needs three macOS permissions for full Sleep Focus detection. On first
 The Settings → System Access section in the app shows live status of all three. Diagnose any "sleeping animation isn't triggering" issue with:
 
 ```bash
-log show --predicate 'subsystem == "com.petnative.focus"' --last 30s --info --debug
+log show --predicate 'subsystem == "com.petos.focus"' --last 30s --info --debug
 ```
 ````
 
@@ -1748,7 +1748,7 @@ Expected: app launches, tests all pass, smoke test ends in `PASS`.
 6. Tail logs in another terminal during steps 3–5:
 
 ```bash
-log stream --predicate 'subsystem == "com.petnative.focus"' --info --debug
+log stream --predicate 'subsystem == "com.petos.focus"' --info --debug
 ```
 
 Expected log progression: `infocus.status authorized=true is_focused=false` → user toggles Sleep ON → `infocus.status authorized=true is_focused=true`, `assertions.read.ok mode_id=com.apple.focus.sleep` (or the unidentified-fallback path), `focus.resolved active=true`, `mood.resolved mood=sleeping reason=sleep_focus_explicit`.
@@ -1772,6 +1772,6 @@ git commit -m "chore: post-implementation cleanup"
 - `./tools/test-bundle.sh` ends in PASS.
 - `swift test --scratch-path /tmp/nativepet-test-build` is fully green, including the 5 new fallback tests and the 5 new pipeline tests and the 2 new permissions tests.
 - Toggling Sleep Focus on triggers the sleeping animation within one focus poll cycle (≤2s).
-- `log stream --predicate 'subsystem == "com.petnative.focus"'` shows a coherent narrative for any focus state change.
+- `log stream --predicate 'subsystem == "com.petos.focus"'` shows a coherent narrative for any focus state change.
 - README's Run section points at `./tools/run.sh`.
 - `rg -n isProperlyBundled Sources/` returns no results.

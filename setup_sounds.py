@@ -6,7 +6,7 @@ def setup_sounds():
     print("=== PetOS Sound Setup ===")
     print("This script helps you organize your downloaded cat sounds.")
     
-    target_dir = "Sources/PetNative/Resources/Sounds"
+    target_dir = "Sources/petOS/Resources/Sounds"
     if not os.path.exists(target_dir):
         print(f"Error: Target directory {target_dir} not found.")
         print("Please run this script from the project root.")
@@ -56,7 +56,7 @@ def setup_sounds():
         print(f"Copying {f} -> {new_name}")
         shutil.copy2(os.path.join(source_dir, f), os.path.join(target_dir, new_name))
 
-    print("\nDone! Your sounds have been organized in Sources/PetNative/Resources/Sounds/")
+    print("\nDone! Your sounds have been organized in Sources/petOS/Resources/Sounds/")
     print("Run ./tools/run.sh --clean to rebuild the app bundle with the new assets.")
 
 if __name__ == "__main__":

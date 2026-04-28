@@ -24,14 +24,14 @@ final class PetAudioService {
             players.append(player)
         }
 
-        NSLog("[PetNative] PetAudioService init; total sounds loaded=\(players.count)")
+        NSLog("[petOS] PetAudioService init; total sounds loaded=\(players.count)")
     }
 
     private var stopTask: Task<Void, Never>?
 
     func playRandomSound() {
         guard let player = players.randomElement() else {
-            NSLog("[PetNative] no audio files available")
+            NSLog("[petOS] no audio files available")
             return
         }
 
@@ -40,7 +40,7 @@ final class PetAudioService {
 
         player.currentTime = 0
         let didPlay = player.play()
-        NSLog("[PetNative] playRandomSound called; didPlay=\(didPlay) volume=\(player.volume) duration=\(player.duration)")
+        NSLog("[petOS] playRandomSound called; didPlay=\(didPlay) volume=\(player.volume) duration=\(player.duration)")
 
         stopTask = Task { @MainActor [weak self] in
             try? await Task.sleep(for: .seconds(2))
@@ -66,7 +66,7 @@ final class PetAudioService {
             player.prepareToPlay()
             return player
         } catch {
-            NSLog("[PetNative] failed to load audio '\(resourceName)': \(error.localizedDescription)")
+            NSLog("[petOS] failed to load audio '\(resourceName)': \(error.localizedDescription)")
             return nil
         }
     }

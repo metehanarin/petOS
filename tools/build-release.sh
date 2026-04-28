@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-BUNDLE_DIR="$REPO_ROOT/dist/PetNative.app"
+BUNDLE_DIR="${PETOS_RELEASE_BUNDLE_DIR:-/private/tmp/petOS-release/petOS.app}"
 
 # shellcheck source=tools/_bundle.sh
 source "$SCRIPT_DIR/_bundle.sh"

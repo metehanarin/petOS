@@ -3,37 +3,37 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-PRODUCT_NAME="PetNative"
+PRODUCT_NAME="petOS"
 
 bundle_log() {
   echo "[bundle] $*"
 }
 
 resource_fingerprint() {
-  local source_info_plist="$REPO_ROOT/Sources/PetNative/Info.plist"
-  local source_resources="$REPO_ROOT/Sources/PetNative/Resources"
+  local source_info_plist="$REPO_ROOT/Sources/petOS/Info.plist"
+  local source_resources="$REPO_ROOT/Sources/petOS/Resources"
 
   (
     cd "$REPO_ROOT"
 
-    echo "petnative-resource-fingerprint-v2"
+    echo "petos-resource-fingerprint-v2"
 
     if [[ -f "$source_info_plist" ]]; then
       local hash
-      hash="$(shasum -a 256 "Sources/PetNative/Info.plist" | awk '{print $1}')"
-      printf 'file %s %s\n' "Sources/PetNative/Info.plist" "$hash"
+      hash="$(shasum -a 256 "Sources/petOS/Info.plist" | awk '{print $1}')"
+      printf 'file %s %s\n' "Sources/petOS/Info.plist" "$hash"
     else
-      echo "missing Sources/PetNative/Info.plist"
+      echo "missing Sources/petOS/Info.plist"
     fi
 
     if [[ -d "$source_resources" ]]; then
-      find "Sources/PetNative/Resources" -type f -print | LC_ALL=C sort | while IFS= read -r path; do
+      find "Sources/petOS/Resources" -type f -print | LC_ALL=C sort | while IFS= read -r path; do
         local hash
         hash="$(shasum -a 256 "$path" | awk '{print $1}')"
         printf 'file %s %s\n' "$path" "$hash"
       done
     else
-      echo "missing Sources/PetNative/Resources"
+      echo "missing Sources/petOS/Resources"
     fi
   ) | shasum -a 256 | awk '{print $1}'
 }
@@ -45,7 +45,7 @@ validate_packaged_resources() {
   fi
 
   local resource_bundle="$1"
-  local source_resources="$REPO_ROOT/Sources/PetNative/Resources"
+  local source_resources="$REPO_ROOT/Sources/petOS/Resources"
 
   if [[ ! -d "$resource_bundle" ]]; then
     echo "[bundle] error: missing SwiftPM resource bundle: $resource_bundle" >&2
@@ -98,11 +98,11 @@ build_bundle() {
   local macos_dir="$contents_dir/MacOS"
   local resources_dir="$contents_dir/Resources"
   local info_plist="$contents_dir/Info.plist"
-  local source_info_plist="$REPO_ROOT/Sources/PetNative/Info.plist"
+  local source_info_plist="$REPO_ROOT/Sources/petOS/Info.plist"
   local resource_bundle_name="${PRODUCT_NAME}_${PRODUCT_NAME}.bundle"
   local app_resource_bundle="$resources_dir/$resource_bundle_name"
   local app_binary="$macos_dir/$PRODUCT_NAME"
-  local fingerprint_file="$resources_dir/.petnative-resource-fingerprint"
+  local fingerprint_file="$resources_dir/.petos-resource-fingerprint"
 
   local bin_path
   bin_path="$(cd "$REPO_ROOT" && swift build -c "$config" --show-bin-path)"
@@ -162,6 +162,7 @@ build_bundle() {
   chmod +x "$app_binary"
 
   bundle_log "codesigning"
+  xattr -cr "$bundle_dir"
   codesign --force --deep --sign - "$bundle_dir"
   codesign --verify --deep --strict "$bundle_dir"
 

@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import PetNative
+@testable import petOS
 
 struct PetPersistenceTests {
     @Test

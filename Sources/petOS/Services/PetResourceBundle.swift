@@ -1,7 +1,7 @@
 import Foundation
 
 enum PetResourceBundle {
-    private static let bundleName = "PetNative_PetNative.bundle"
+    private static let bundleName = "petOS_petOS.bundle"
 
     static var bundle: Bundle {
         if let resourceURL = Bundle.main.resourceURL?.appendingPathComponent(bundleName),
@@ -16,7 +16,7 @@ enum PetResourceBundle {
         }
 
         if Bundle.main.bundlePath.hasSuffix(".app") {
-            NSLog("[PetNative] missing packaged resource bundle: \(bundleName)")
+            NSLog("[petOS] missing packaged resource bundle: \(bundleName)")
             return Bundle.main
         }
 

@@ -1,4 +1,4 @@
-# PetNative
+# petOS
 
 Native macOS migration target for the Electron-based `petOS` app.
 
@@ -28,9 +28,9 @@ cd /Users/metehanarin/Documents/petOS
 ./tools/run.sh
 ```
 
-This bundles PetNative into a real `.app` so macOS TCC can persist Focus, Accessibility, and Full Disk Access grants across rebuilds. Running the binary directly via `swift run` exits with `EX_CONFIG` (78); use `./tools/run.sh` instead.
+This bundles petOS into a real `.app` so macOS TCC can persist Focus, Accessibility, and Full Disk Access grants across rebuilds. Running the binary directly via `swift run` exits with `EX_CONFIG` (78); use `./tools/run.sh` instead.
 
-Pass extra args to PetNative after `--`:
+Pass extra args to petOS after `--`:
 
 ```bash
 ./tools/run.sh -- --debug
@@ -46,12 +46,12 @@ Build a distributable bundle:
 
 ```bash
 ./tools/build-release.sh
-# Output: dist/PetNative.app
+# Output: dist/petOS.app
 ```
 
 ### First run - system permissions
 
-PetNative needs three macOS permissions for full Sleep Focus detection. On first launch, accept the prompts that appear, or grant them manually in System Settings -> Privacy & Security:
+petOS needs three macOS permissions for full Sleep Focus detection. On first launch, accept the prompts that appear, or grant them manually in System Settings -> Privacy & Security:
 
 | Permission | What it enables | If denied |
 |---|---|---|
@@ -62,7 +62,7 @@ PetNative needs three macOS permissions for full Sleep Focus detection. On first
 The Settings -> System Access section in the app shows live status of all three. Diagnose any "sleeping animation is not triggering" issue with:
 
 ```bash
-log show --predicate 'subsystem == "com.petnative.focus"' --last 30s --info --debug
+log show --predicate 'subsystem == "com.petos.focus"' --last 30s --info --debug
 ```
 
 ## Cat Sounds Setup
@@ -90,7 +90,7 @@ The app loads up to 10 meow and 10 purr sounds that play randomly when you click
 
 ### Files Needed
 
-Add these to `Sources/PetNative/Resources/Sounds/`:
+Add these to `Sources/petOS/Resources/Sounds/`:
 - `meow1.mp3` through `meow10.mp3`
 - `purr1.mp3` through `purr10.mp3` or `.wav`
 

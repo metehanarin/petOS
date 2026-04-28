@@ -1,5 +1,5 @@
 import Testing
-@testable import PetNative
+@testable import petOS
 
 struct PetSpriteCatalogTests {
     @MainActor

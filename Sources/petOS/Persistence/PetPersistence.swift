@@ -107,7 +107,7 @@ final class PetPersistence {
             let applicationSupportDirectory = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first ??
                 URL(fileURLWithPath: NSTemporaryDirectory())
             let containerURL = applicationSupportDirectory
-                .appendingPathComponent("PetNative", isDirectory: true)
+                .appendingPathComponent("petOS", isDirectory: true)
             self.fileURL = containerURL.appendingPathComponent("state.json")
         }
 
@@ -240,7 +240,7 @@ final class PetPersistence {
             let data = try encoder.encode(snapshot)
             try data.write(to: fileURL, options: .atomic)
         } catch {
-            NSLog("[PetNative] persistence write failed: \(error.localizedDescription)")
+            NSLog("[petOS] persistence write failed: \(error.localizedDescription)")
         }
     }
 }

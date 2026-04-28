@@ -34,7 +34,7 @@ final class PetAppModel: ObservableObject {
     private let persistence: PetPersistence
     private let windowManager: PetWindowManager
     private let notificationAlertWindow: TimeInterval
-    private let moodLog = Logger(subsystem: "com.petnative.focus", category: "mood")
+    private let moodLog = Logger(subsystem: "com.petos.focus", category: "mood")
     private lazy var monitorCoordinator = PetMonitorCoordinator(model: self, persistence: persistence)
     private var notificationClearTask: Task<Void, Never>?
     private var debugLogTask: Task<Void, Never>?
@@ -252,7 +252,7 @@ final class PetAppModel: ObservableObject {
     }
 
     func handleSoundGesture() {
-        NSLog("[PetNative] pet interaction received; soundEnabled=\(soundEnabled)")
+        NSLog("[petOS] pet interaction received; soundEnabled=\(soundEnabled)")
 
         guard soundEnabled else {
             return
@@ -293,7 +293,7 @@ final class PetAppModel: ObservableObject {
             try reactionServer.start()
             self.reactionServer = reactionServer
         } catch {
-            NSLog("[PetNative] reaction server failed to start: \(error.localizedDescription)")
+            NSLog("[petOS] reaction server failed to start: \(error.localizedDescription)")
         }
     }
 
@@ -353,6 +353,6 @@ final class PetAppModel: ObservableObject {
             return
         }
 
-        NSLog("[PetNative] debug snapshot: \(json)")
+        NSLog("[petOS] debug snapshot: \(json)")
     }
 }

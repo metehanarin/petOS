@@ -11,7 +11,7 @@ enum PetLaunchPreflight {
 
         fputs(
             """
-            [PetNative] FATAL: this binary must be launched from an .app bundle.
+            [petOS] FATAL: this binary must be launched from an .app bundle.
             Use ./tools/run.sh (dev) or ./tools/build-release.sh (release).
             Detected bundle path: \(path)
 

@@ -55,7 +55,7 @@ final class ActivityPoller {
                 fallbackTopApps: AppConstants.defaultTopApps,
                 refreshInterval: AppConstants.topAppsRefreshInterval,
                 logWarning: { message in
-                    NSLog("%@", "[PetNative] \(message)")
+                    NSLog("%@", "[petOS] \(message)")
                 }
             )
         )
