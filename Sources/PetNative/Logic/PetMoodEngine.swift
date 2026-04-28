@@ -15,7 +15,6 @@ enum PetMoodEngine {
         case productivityApp = "productivity_app"
         case focusWithTopApp = "focus_with_top_app"
         case attentionApp = "attention_app"
-        case imminentCalendar = "imminent_calendar"
         case notificationAlert = "notification_alert"
         case sickCPU = "sick_cpu"
         case sickThermal = "sick_thermal"
@@ -74,10 +73,6 @@ enum PetMoodEngine {
 
         if (state.battery.level ?? 1) < 0.2 {
             return MoodResolution(mood: .sick, reason: .sickBattery)
-        }
-
-        if hasImminentCalendarEvent(state.calendar) {
-            return MoodResolution(mood: .alert, reason: .imminentCalendar)
         }
 
         if hasActiveNotificationAlert(state.notifications, now: now) {
@@ -249,9 +244,6 @@ enum PetMoodEngine {
     ]
 
     private static let attentionAppNames: Set<String> = [
-        "calendar",
-        "fantastical",
-        "google calendar",
         "mail",
         "apple mail",
         "gmail",
@@ -383,14 +375,6 @@ enum PetMoodEngine {
         return !musicAppNames.contains(normalizedAppName) &&
             !attentionAppNames.contains(normalizedAppName) &&
             !passiveAppNames.contains(normalizedAppName)
-    }
-
-    private static func hasImminentCalendarEvent(_ calendar: CalendarState) -> Bool {
-        guard let minutesAway = calendar.nextEvent?.minutesAway else {
-            return false
-        }
-
-        return (0 ... 15).contains(minutesAway)
     }
 
     private static func hasActiveNotificationAlert(_ notifications: NotificationState, now: Date) -> Bool {

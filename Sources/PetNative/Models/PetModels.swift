@@ -33,14 +33,6 @@ enum SunPhase: String, Codable {
     }
 }
 
-enum WeatherCondition: String, Codable {
-    case clear
-    case cloudy
-    case rain
-    case snow
-    case storm
-}
-
 enum ThermalSeverity: String, Codable {
     case nominal
     case fair
@@ -116,14 +108,14 @@ struct PetPosition: Codable, Equatable {
 
 struct PetPreferences: Codable, Equatable {
     var soundEnabled: Bool
-    var swipeMeowEnabled: Bool
+    var swipeSoundEnabled: Bool
     var reactionServerEnabled: Bool
     var alwaysOnTop: Bool
 
     static var `default`: PetPreferences {
         PetPreferences(
             soundEnabled: false,
-            swipeMeowEnabled: true,
+            swipeSoundEnabled: true,
             reactionServerEnabled: true,
             alwaysOnTop: true
         )
@@ -131,12 +123,12 @@ struct PetPreferences: Codable, Equatable {
 
     init(
         soundEnabled: Bool = false,
-        swipeMeowEnabled: Bool = true,
+        swipeSoundEnabled: Bool = true,
         reactionServerEnabled: Bool = true,
         alwaysOnTop: Bool = true
     ) {
         self.soundEnabled = soundEnabled
-        self.swipeMeowEnabled = swipeMeowEnabled
+        self.swipeSoundEnabled = swipeSoundEnabled
         self.reactionServerEnabled = reactionServerEnabled
         self.alwaysOnTop = alwaysOnTop
     }
@@ -144,9 +136,16 @@ struct PetPreferences: Codable, Equatable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         soundEnabled = try container.decodeIfPresent(Bool.self, forKey: .soundEnabled) ?? Self.default.soundEnabled
-        swipeMeowEnabled = try container.decodeIfPresent(Bool.self, forKey: .swipeMeowEnabled) ?? Self.default.swipeMeowEnabled
+        swipeSoundEnabled = try container.decodeIfPresent(Bool.self, forKey: .swipeSoundEnabled) ?? Self.default.swipeSoundEnabled
         reactionServerEnabled = try container.decodeIfPresent(Bool.self, forKey: .reactionServerEnabled) ?? Self.default.reactionServerEnabled
         alwaysOnTop = try container.decodeIfPresent(Bool.self, forKey: .alwaysOnTop) ?? Self.default.alwaysOnTop
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case soundEnabled
+        case swipeSoundEnabled = "swipeMeowEnabled"
+        case reactionServerEnabled
+        case alwaysOnTop
     }
 }
 
@@ -173,22 +172,6 @@ struct BatteryState: Codable, Equatable {
         charging: true,
         onBatteryPower: false,
         status: "charged"
-    )
-}
-
-struct CalendarEventState: Codable, Equatable {
-    var title: String
-    var startAt: Date
-    var minutesAway: Int
-}
-
-struct CalendarState: Codable, Equatable {
-    var nextEvent: CalendarEventState?
-    var source: String
-
-    static let `default` = CalendarState(
-        nextEvent: nil,
-        source: "calendar"
     )
 }
 
@@ -219,16 +202,6 @@ struct ActivityState: Codable, Equatable {
         runningApps: [],
         topApps: [],
         source: "fallback"
-    )
-}
-
-struct WeatherState: Codable, Equatable {
-    var condition: WeatherCondition
-    var tempC: Double?
-
-    static let `default` = WeatherState(
-        condition: .clear,
-        tempC: nil
     )
 }
 
@@ -290,10 +263,8 @@ struct WorldState: Codable, Equatable {
     var sunPhase: SunPhase
     var system: SystemState
     var battery: BatteryState
-    var calendar: CalendarState
     var focus: FocusState
     var activity: ActivityState
-    var weather: WeatherState
     var music: MusicState
     var notifications: NotificationState
     var events: [PetEvent]
@@ -308,10 +279,8 @@ struct WorldState: Codable, Equatable {
             sunPhase: SunPhase.resolve(for: hour),
             system: .default,
             battery: .default,
-            calendar: .default,
             focus: .default,
             activity: .default,
-            weather: .default,
             music: .default,
             notifications: .default,
             events: [],
@@ -342,10 +311,8 @@ enum AppConstants {
     static let topAppsRefreshInterval: TimeInterval = 15 * 60
     static let notificationMonitorRestartDelay: TimeInterval = 2
     static let notificationDelayedFallbackDeduplicationWindow: TimeInterval = 7
-    static let weatherLatitude = 41.02
-    static let weatherLongitude = 28.58
     static let notificationAlertWindow: TimeInterval = 8
-    static let meowDebounceInterval: TimeInterval = 0.5
+    static let soundDebounceInterval: TimeInterval = 0.5
     static let defaultTopApps = [
         "Cursor",
         "Visual Studio Code",

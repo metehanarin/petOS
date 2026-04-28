@@ -356,16 +356,6 @@ struct PetMoodEngineTests {
     }
 
     @Test
-    func alertBeatsDancingWhenCalendarEventIsImminent() {
-        let state = PetTestSupport.makeState {
-            $0.music.playing = true
-            $0.calendar.nextEvent = CalendarEventState(title: "Standup", startAt: .now, minutesAway: 15)
-        }
-
-        #expect(PetMoodEngine.resolveBaseMood(for: state) == .alert)
-    }
-
-    @Test
     func alertResolvesWhileNotificationIsActive() {
         let now = Date(timeIntervalSince1970: 1_777_777_777)
         let state = PetTestSupport.makeState {
@@ -455,7 +445,7 @@ struct PetMoodEngineTests {
 
     @Test
     func frontmostAttentionAppsResolveToAlertOverMusic() {
-        for appName in ["Microsoft Outlook", "Gmail", "Google Calendar", "Slack", "Zoom"] {
+        for appName in ["Microsoft Outlook", "Gmail", "Slack", "Zoom"] {
             let state = PetTestSupport.makeState {
                 $0.music.playing = true
                 $0.activity.frontApp = appName

@@ -46,8 +46,8 @@ struct SettingsView: View {
     private var careTab: some View {
         Form {
             Section("Care") {
-                Toggle("Meow sound", isOn: soundBinding)
-                Toggle("Swipe down to meow", isOn: swipeMeowBinding)
+                Toggle("Sound", isOn: soundBinding)
+                Toggle("Swipe down to play sound", isOn: swipeSoundBinding)
             }
 
             Section("Position") {
@@ -83,7 +83,6 @@ struct SettingsView: View {
                 SettingsStatusRow(title: "Front app", value: frontAppSummary, systemImage: "macwindow")
                 SettingsStatusRow(title: "Battery", value: batterySummary, systemImage: "battery.100percent")
                 SettingsStatusRow(title: "Music", value: musicSummary, systemImage: "music.note")
-                SettingsStatusRow(title: "Calendar", value: calendarSummary, systemImage: "calendar.badge.clock")
                 SettingsStatusRow(title: "Notifications", value: notificationSummary, systemImage: "bell.badge.fill")
             }
 
@@ -136,10 +135,10 @@ struct SettingsView: View {
         )
     }
 
-    private var swipeMeowBinding: Binding<Bool> {
+    private var swipeSoundBinding: Binding<Bool> {
         Binding(
-            get: { model.swipeMeowEnabled },
-            set: { model.setSwipeMeowEnabled($0) }
+            get: { model.swipeSoundEnabled },
+            set: { model.setSwipeSoundEnabled($0) }
         )
     }
 
@@ -168,14 +167,6 @@ struct SettingsView: View {
         }
 
         return "\(music.track) - \(music.artist)"
-    }
-
-    private var calendarSummary: String {
-        guard let event = model.worldState.calendar.nextEvent else {
-            return "None"
-        }
-
-        return "\(event.title) in \(event.minutesAway)m"
     }
 
     private var notificationSummary: String {

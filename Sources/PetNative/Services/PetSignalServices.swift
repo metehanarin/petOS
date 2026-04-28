@@ -7,91 +7,6 @@ struct NotificationDelivery: Equatable, Sendable {
     var timestamp: Date
 }
 
-enum WeatherService {
-    static func url() -> URL? {
-        var components = URLComponents(string: "https://api.open-meteo.com/v1/forecast")
-        components?.queryItems = [
-            URLQueryItem(name: "latitude", value: String(AppConstants.weatherLatitude)),
-            URLQueryItem(name: "longitude", value: String(AppConstants.weatherLongitude)),
-            URLQueryItem(name: "current", value: "temperature_2m,weather_code")
-        ]
-        return components?.url
-    }
-
-    static func mapWeatherCode(_ code: Int) -> WeatherCondition {
-        switch code {
-        case 0 ... 1:
-            return .clear
-        case 2, 3, 45, 48:
-            return .cloudy
-        case 51 ... 67, 80 ... 82:
-            return .rain
-        case 71 ... 77, 85, 86:
-            return .snow
-        case 95, 96, 99:
-            return .storm
-        default:
-            return .clear
-        }
-    }
-
-    static func parseCurrentWeather(from data: Data) -> WeatherState? {
-        guard
-            let payload = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-            let current = payload["current"] as? [String: Any]
-        else {
-            return nil
-        }
-
-        let code = current["weather_code"] as? Int ?? 0
-        let tempC = current["temperature_2m"] as? Double
-        return WeatherState(condition: mapWeatherCode(code), tempC: tempC)
-    }
-}
-
-enum CalendarEventParser {
-    static func parse(_ output: String, now: Date = .now) -> CalendarState {
-        let trimmed = output.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else {
-            return .default
-        }
-
-        let parts = trimmed.components(separatedBy: "\t")
-        guard parts.count >= 2, let startAt = parseDate(parts[1]) else {
-            return .default
-        }
-
-        let minutesAway = max(0, Int(ceil(startAt.timeIntervalSince(now) / 60)))
-        return CalendarState(
-            nextEvent: CalendarEventState(
-                title: parts[0],
-                startAt: startAt,
-                minutesAway: minutesAway
-            ),
-            source: "calendar"
-        )
-    }
-
-    private static func parseDate(_ value: String) -> Date? {
-        let iso8601WithFractionalSeconds = ISO8601DateFormatter()
-        iso8601WithFractionalSeconds.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let date = iso8601WithFractionalSeconds.date(from: value) {
-            return date
-        }
-
-        let iso8601 = ISO8601DateFormatter()
-        iso8601.formatOptions = [.withInternetDateTime]
-        if let date = iso8601.date(from: value) {
-            return date
-        }
-
-        let localFormatter = DateFormatter()
-        localFormatter.locale = Locale(identifier: "en_US_POSIX")
-        localFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
-        return localFormatter.date(from: value)
-    }
-}
-
 enum MusicStateParser {
     static func parse(_ output: String, source: String) -> MusicState {
         let raw = output.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -319,15 +234,6 @@ enum NotificationLogParser {
         pattern: #"^Presenting <NotificationRecord app:"([^"]+)""#
     )
 
-    static func isCalendarNotificationBundleID(_ bundleID: String) -> Bool {
-        let normalized = bundleID.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        guard !normalized.isEmpty else {
-            return false
-        }
-
-        return normalized.hasPrefix("com.apple.ical") || normalized.hasPrefix("com.apple.calendar")
-    }
-
     static func parseTimestamp(_ value: String) -> Date? {
         for formatter in timestampFormatters {
             if let date = formatter.date(from: value) {
@@ -372,10 +278,6 @@ enum NotificationLogParser {
         }
 
         let bundleID = String(eventMessage[bundleRange])
-        guard !isCalendarNotificationBundleID(bundleID) else {
-            return nil
-        }
-
         return NotificationDelivery(
             bundleID: bundleID,
             deliveryState: "presented",
@@ -396,7 +298,7 @@ enum NotificationLogParser {
         let bundleID = String(eventMessage[bundleRange])
         let deliveryState = String(eventMessage[stateRange]).trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
 
-        guard deliveryState == "delivered", !isCalendarNotificationBundleID(bundleID) else {
+        guard deliveryState == "delivered" else {
             return nil
         }
 

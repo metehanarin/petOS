@@ -4,31 +4,6 @@ import Testing
 
 struct PetServiceParsersTests {
     @Test
-    func weatherCodeMappingGroupsRainAndSnow() {
-        #expect(WeatherService.mapWeatherCode(63) == .rain)
-        #expect(WeatherService.mapWeatherCode(75) == .snow)
-        #expect(WeatherService.mapWeatherCode(0) == .clear)
-    }
-
-    @Test
-    func weatherURLUsesDefaultCoordinates() {
-        let absoluteString = WeatherService.url()?.absoluteString ?? ""
-        #expect(absoluteString.contains("latitude=41.02"))
-        #expect(absoluteString.contains("longitude=28.58"))
-    }
-
-    @Test
-    func calendarParserNormalizesUpcomingEvent() {
-        let formatter = ISO8601DateFormatter()
-        let now = formatter.date(from: "2024-04-23T12:00:00Z")!
-        let state = CalendarEventParser.parse("Standup\t2024-04-23T12:15:00Z", now: now)
-
-        #expect(state.nextEvent?.title == "Standup")
-        #expect(state.nextEvent?.minutesAway == 15)
-        #expect(state.source == "calendar")
-    }
-
-    @Test
     func focusModeResolverSupportsNestedPayloads() {
         let assertions: [String: Any] = [
             "data": [
@@ -257,22 +232,6 @@ struct PetServiceParsersTests {
         let delivery = try #require(NotificationLogParser.parseDelivery(from: line))
         #expect(delivery.bundleID == "com.apple.MobileSMS")
         #expect(delivery.deliveryState == "presented")
-    }
-
-    @Test
-    func calendarPresentationNotificationsAreIgnored() {
-        let line = #"""
-        {"eventMessage":"Presenting <NotificationRecord app:\"com.apple.iCal\" ident:\"DA39-A3EE\"> as banner ([\"badge\", \"sound\", \"alert\"])","timestamp":"2026-04-23 20:44:31.856073+0300"}
-        """#
-
-        #expect(NotificationLogParser.parseDelivery(from: line) == nil)
-    }
-
-    @Test
-    func calendarNotificationBundlesAreIgnored() {
-        #expect(NotificationLogParser.isCalendarNotificationBundleID("com.apple.iCal"))
-        #expect(NotificationLogParser.isCalendarNotificationBundleID("com.apple.iCal.CalendarNotificationContentExtention-OSX"))
-        #expect(!NotificationLogParser.isCalendarNotificationBundleID("com.apple.MobileSMS"))
     }
 
     @Test

@@ -7,10 +7,8 @@ enum PetTestSupport {
         state.idle = 0
         state.system = .default
         state.battery = .default
-        state.calendar = .default
         state.focus = .default
         state.activity = .default
-        state.weather = .default
         state.music = .default
         state.notifications = .default
         state.events = []

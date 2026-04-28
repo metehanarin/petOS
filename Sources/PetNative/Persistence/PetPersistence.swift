@@ -176,8 +176,8 @@ final class PetPersistence {
     }
 
     @discardableResult
-    func setSwipeMeowEnabled(_ value: Bool) -> Bool {
-        snapshot.preferences.swipeMeowEnabled = value
+    func setSwipeSoundEnabled(_ value: Bool) -> Bool {
+        snapshot.preferences.swipeSoundEnabled = value
         flush()
         return value
     }

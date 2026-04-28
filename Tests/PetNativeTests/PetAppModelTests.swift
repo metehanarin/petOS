@@ -11,17 +11,17 @@ struct PetAppModelTests {
         let model = PetAppModel(arguments: [], persistence: persistence)
 
         model.setSoundEnabled(true)
-        model.setSwipeMeowEnabled(false)
+        model.setSwipeSoundEnabled(false)
         model.setReactionServerEnabled(false)
         model.setAlwaysOnTop(false)
 
         #expect(model.soundEnabled == true)
-        #expect(model.swipeMeowEnabled == false)
+        #expect(model.swipeSoundEnabled == false)
         #expect(model.reactionServerEnabled == false)
         #expect(model.alwaysOnTop == false)
         #expect(PetPersistence(fileURL: fileURL).currentSnapshot.preferences == PetPreferences(
             soundEnabled: true,
-            swipeMeowEnabled: false,
+            swipeSoundEnabled: false,
             reactionServerEnabled: false,
             alwaysOnTop: false
         ))
