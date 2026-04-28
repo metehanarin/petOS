@@ -16,33 +16,33 @@ struct PetMoodEngineTests {
     }
 
     @Test
-    func sleepingResolvesDuringOvernightWindowWithoutSleepFocusMode() {
+    func overnightWindowWithoutSleepFocusModeDoesNotResolveSleeping() {
         let state = PetTestSupport.makeState {
             $0.hour = 2
             $0.music.playing = true
         }
 
-        #expect(PetMoodEngine.resolveBaseMood(for: state) == .sleeping)
+        #expect(PetMoodEngine.resolveBaseMood(for: state) == .dancing)
     }
 
     @Test
-    func sleepingResolvesAtMidnightWithoutSleepFocusMode() {
+    func midnightWithoutSleepFocusModeDoesNotResolveSleeping() {
         let state = PetTestSupport.makeState {
             $0.hour = 0
             $0.music.playing = true
         }
 
-        #expect(PetMoodEngine.resolveBaseMood(for: state) == .sleeping)
+        #expect(PetMoodEngine.resolveBaseMood(for: state) == .dancing)
     }
 
     @Test
-    func sleepingResolvesBeforeSixAMWithoutSleepFocusMode() {
+    func beforeSixAMWithoutSleepFocusModeDoesNotResolveSleeping() {
         let state = PetTestSupport.makeState {
             $0.hour = 5
             $0.music.playing = true
         }
 
-        #expect(PetMoodEngine.resolveBaseMood(for: state) == .sleeping)
+        #expect(PetMoodEngine.resolveBaseMood(for: state) == .dancing)
     }
 
     @Test
@@ -146,19 +146,49 @@ struct PetMoodEngineTests {
     }
 
     @Test
+    func sleepingResolvesWhenFocusActiveWithUnknownIdentifierAndSleepName() {
+        let state = PetTestSupport.makeState {
+            $0.hour = 14
+            $0.focus.active = true
+            $0.focus.modeIdentifier = "com.apple.focus.mode.sleep"
+            $0.focus.modeName = "Sleep"
+        }
+
+        let resolution = PetMoodEngine.resolveBaseMoodWithReason(for: state)
+        #expect(resolution.mood == .sleeping)
+        #expect(resolution.reason == .sleepFocusExplicit)
+    }
+
+    @Test
+    func sleepingResolvesForMacOSSleepModeIdentifier() {
+        let state = PetTestSupport.makeState {
+            $0.hour = 14
+            $0.focus.active = true
+            $0.focus.modeIdentifier = "com.apple.sleep.sleep-mode"
+            $0.focus.modeName = "Sleep"
+            $0.music.playing = true
+        }
+
+        let resolution = PetMoodEngine.resolveBaseMoodWithReason(for: state)
+        #expect(resolution.mood == .sleeping)
+        #expect(resolution.reason == .sleepFocusExplicit)
+    }
+
+    @Test
     func workingResolvesWhenFocusActiveWithWorkNameOnly() {
         let state = PetTestSupport.makeState {
             $0.hour = 14
             $0.focus.active = true
             $0.focus.modeIdentifier = nil
             $0.focus.modeName = "Work"
+            $0.activity.frontApp = "Cursor"
         }
 
         #expect(PetMoodEngine.resolveBaseMood(for: state) == .working)
     }
 
     @Test
-    func sleepingResolvesForCustomNamedFocusOutsideSleepWindow() {
+    func customNamedFocusDoesNotResolveSleeping() {
         let state = PetTestSupport.makeState {
             $0.hour = 14
             $0.focus.active = true
@@ -167,8 +197,8 @@ struct PetMoodEngineTests {
         }
 
         let resolution = PetMoodEngine.resolveBaseMoodWithReason(for: state)
-        #expect(resolution.mood == .sleeping)
-        #expect(resolution.reason == .unidentifiedFocusAssumedSleep)
+        #expect(resolution.mood == .idle)
+        #expect(resolution.reason == .idleDefault)
     }
 
     @Test
@@ -194,7 +224,7 @@ struct PetMoodEngineTests {
     }
 
     @Test
-    func unidentifiedProtectedFocusResolvesToSleepingInLateEvening() {
+    func unidentifiedProtectedFocusResolvesSleepingInLateEvening() {
         let state = PetTestSupport.makeState {
             $0.hour = 23
             $0.focus.active = true
@@ -202,11 +232,13 @@ struct PetMoodEngineTests {
             $0.music.playing = true
         }
 
-        #expect(PetMoodEngine.resolveBaseMood(for: state) == .sleeping)
+        let resolution = PetMoodEngine.resolveBaseMoodWithReason(for: state)
+        #expect(resolution.mood == .sleeping)
+        #expect(resolution.reason == .unidentifiedFocusAssumedSleep)
     }
 
     @Test
-    func unidentifiedProtectedFocusResolvesToSleepingDuringDaytime() {
+    func unidentifiedProtectedFocusResolvesSleepingDuringDaytime() {
         let state = PetTestSupport.makeState {
             $0.hour = 14
             $0.focus.active = true
@@ -214,11 +246,13 @@ struct PetMoodEngineTests {
             $0.music.playing = true
         }
 
-        #expect(PetMoodEngine.resolveBaseMood(for: state) == .sleeping)
+        let resolution = PetMoodEngine.resolveBaseMoodWithReason(for: state)
+        #expect(resolution.mood == .sleeping)
+        #expect(resolution.reason == .unidentifiedFocusAssumedSleep)
     }
 
     @Test
-    func unidentifiedStatusFocusResolvesToSleepingDuringDaytime() {
+    func unidentifiedStatusFocusResolvesSleepingDuringDaytime() {
         let state = PetTestSupport.makeState {
             $0.hour = 14
             $0.focus.active = true
@@ -226,7 +260,24 @@ struct PetMoodEngineTests {
             $0.music.playing = true
         }
 
-        #expect(PetMoodEngine.resolveBaseMood(for: state) == .sleeping)
+        let resolution = PetMoodEngine.resolveBaseMoodWithReason(for: state)
+        #expect(resolution.mood == .sleeping)
+        #expect(resolution.reason == .unidentifiedFocusAssumedSleep)
+    }
+
+    @Test
+    func doNotDisturbFocusResolvesToSleeping() {
+        let state = PetTestSupport.makeState {
+            $0.hour = 14
+            $0.focus.active = true
+            $0.focus.modeIdentifier = "com.apple.donotdisturb"
+            $0.focus.modeName = "Do Not Disturb"
+            $0.music.playing = true
+        }
+
+        let resolution = PetMoodEngine.resolveBaseMoodWithReason(for: state)
+        #expect(resolution.mood == .sleeping)
+        #expect(resolution.reason == .doNotDisturbFocus)
     }
 
     @Test
@@ -237,6 +288,7 @@ struct PetMoodEngineTests {
             $0.focus.modeIdentifier = "com.apple.focus.work"
             $0.focus.modeName = "Sleep"
             $0.music.playing = true
+            $0.activity.frontApp = "Cursor"
         }
 
         #expect(PetMoodEngine.resolveBaseMood(for: state) == .working)
@@ -258,12 +310,26 @@ struct PetMoodEngineTests {
             $0.focus.active = true
             $0.focus.modeIdentifier = "com.apple.focus.work"
             $0.focus.modeName = "Work"
-            $0.activity.frontApp = "Finder"
-            $0.activity.runningApps = ["Finder"]
+            $0.activity.frontApp = "Cursor"
+            $0.activity.runningApps = ["Cursor"]
             $0.activity.topApps = ["Cursor", "Safari"]
         }
 
         #expect(PetMoodEngine.resolveBaseMood(for: state) == .working)
+    }
+
+    @Test
+    func workFocusDoesNotForceWorkingForPassiveFrontmostApp() {
+        let state = PetTestSupport.makeState {
+            $0.focus.active = true
+            $0.focus.modeIdentifier = "com.apple.focus.work"
+            $0.focus.modeName = "Work"
+            $0.activity.frontApp = "Finder"
+            $0.activity.runningApps = ["Finder"]
+            $0.activity.topApps = ["Finder", "Cursor"]
+        }
+
+        #expect(PetMoodEngine.resolveBaseMood(for: state) == .idle)
     }
 
     @Test
@@ -372,6 +438,65 @@ struct PetMoodEngineTests {
         }
 
         #expect(PetMoodEngine.resolveBaseMood(for: state) == .working)
+    }
+
+    @Test
+    func appStoreProductivityAppsResolveToWorkingOverMusic() {
+        for appName in ["ChatGPT", "Google Docs", "Google Sheets", "Microsoft 365", "PowerPoint", "Perplexity", "Goodnotes"] {
+            let state = PetTestSupport.makeState {
+                $0.music.playing = true
+                $0.activity.frontApp = appName
+                $0.activity.runningApps = [appName, "Music"]
+            }
+
+            #expect(PetMoodEngine.resolveBaseMood(for: state) == .working)
+        }
+    }
+
+    @Test
+    func frontmostAttentionAppsResolveToAlertOverMusic() {
+        for appName in ["Microsoft Outlook", "Gmail", "Google Calendar", "Slack", "Zoom"] {
+            let state = PetTestSupport.makeState {
+                $0.music.playing = true
+                $0.activity.frontApp = appName
+                $0.activity.runningApps = [appName, "Music"]
+            }
+
+            #expect(PetMoodEngine.resolveBaseMood(for: state) == .alert)
+        }
+    }
+
+    @Test
+    func frontmostMusicAppDoesNotUseFocusTopAppFallback() {
+        for appName in ["Music", "Spotify"] {
+            let state = PetTestSupport.makeState {
+                $0.focus.active = true
+                $0.focus.modeIdentifier = "com.apple.focus.personal"
+                $0.focus.modeName = "Personal"
+                $0.music.playing = true
+                $0.activity.frontApp = appName
+                $0.activity.runningApps = [appName]
+                $0.activity.topApps = [appName]
+            }
+
+            #expect(PetMoodEngine.resolveBaseMood(for: state) == .dancing)
+        }
+    }
+
+    @Test
+    func frontmostPassiveAppsDoNotUseFocusTopAppFallback() {
+        for appName in ["Finder", "System Settings", "Preview", "Photos", "Google Drive", "OneDrive"] {
+            let state = PetTestSupport.makeState {
+                $0.focus.active = true
+                $0.focus.modeIdentifier = "com.apple.focus.personal"
+                $0.focus.modeName = "Personal"
+                $0.activity.frontApp = appName
+                $0.activity.runningApps = [appName]
+                $0.activity.topApps = [appName]
+            }
+
+            #expect(PetMoodEngine.resolveBaseMood(for: state) == .idle)
+        }
     }
 
     @Test

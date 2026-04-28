@@ -67,6 +67,76 @@ struct PetServiceParsersTests {
     }
 
     @Test
+    func focusModeResolverRecognizesSleepModeIdentifierUsedByMacOS() {
+        let assertions: [String: Any] = [
+            "data": [
+                [
+                    "storeAssertionRecords": [
+                        [
+                            "assertionDetails": [
+                                "assertionDetailsModeIdentifier": "com.apple.sleep.sleep-mode"
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ]
+        let configurations: [String: Any] = [
+            "data": [
+                [
+                    "modeConfigurations": [
+                        "com.apple.sleep.sleep-mode": [
+                            "mode": [
+                                "modeIdentifier": "com.apple.sleep.sleep-mode",
+                                "name": "Sleep"
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ]
+
+        let mode = FocusModeNameResolver.resolveMode(assertions: assertions, configurations: configurations)
+        #expect(mode?.identifier == "com.apple.sleep.sleep-mode")
+        #expect(mode?.name == "Sleep")
+    }
+
+    @Test
+    func focusModeResolverIgnoresInvalidatedAssertionHistory() {
+        let assertions: [String: Any] = [
+            "data": [
+                [
+                    "storeInvalidationRecords": [
+                        [
+                            "invalidationAssertion": [
+                                "assertionDetails": [
+                                    "assertionDetailsModeIdentifier": "com.apple.sleep.sleep-mode"
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ]
+        let configurations: [String: Any] = [
+            "data": [
+                [
+                    "modeConfigurations": [
+                        "com.apple.sleep.sleep-mode": [
+                            "mode": [
+                                "modeIdentifier": "com.apple.sleep.sleep-mode",
+                                "name": "Sleep"
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ]
+
+        #expect(FocusModeNameResolver.resolveMode(assertions: assertions, configurations: configurations) == nil)
+    }
+
+    @Test
     func focusModeResolverSupportsKeyedConfigurationPayloads() {
         let assertions: [String: Any] = [
             "data": [
@@ -121,6 +191,18 @@ struct PetServiceParsersTests {
 
         #expect(mode?.identifier == "com.apple.focus.sleep")
         #expect(mode?.name == "Sleep")
+    }
+
+    @Test
+    func controlCenterFocusSignalParserRecognizesDoNotDisturbFocusStatus() {
+        let mode = ControlCenterFocusSignalParser.resolveMode(from: [
+            "com.apple.menuextra.clock",
+            "Do Not Disturb Focus, status menu",
+            "Control Center"
+        ])
+
+        #expect(mode?.identifier == "com.apple.donotdisturb")
+        #expect(mode?.name == "Do Not Disturb")
     }
 
     @Test

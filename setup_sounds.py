@@ -57,7 +57,7 @@ def setup_sounds():
         shutil.copy2(os.path.join(source_dir, f), os.path.join(target_dir, new_name))
 
     print("\nDone! Your sounds have been organized in Sources/PetNative/Resources/Sounds/")
-    print("Please rebuild your project in Xcode to include the new assets.")
+    print("Run ./tools/run.sh --clean to rebuild the app bundle with the new assets.")
 
 if __name__ == "__main__":
     setup_sounds()

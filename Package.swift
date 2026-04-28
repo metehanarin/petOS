@@ -18,12 +18,7 @@ let package = Package(
         .executableTarget(
             name: "PetNative",
             exclude: [
-                "Info.plist",
-                "Services/setup_sounds.py",
-                "Services/download_sounds.sh",
-                "Services/SOUND_SETUP.md",
-                "Services/SOUNDS_CHECKLIST.md",
-                "Services/SOUNDS_README.md"
+                "Info.plist"
             ],
             resources: [
                 .process("Resources")

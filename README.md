@@ -55,9 +55,9 @@ PetNative needs three macOS permissions for full Sleep Focus detection. On first
 
 | Permission | What it enables | If denied |
 |---|---|---|
-| Focus | The fastest path: a boolean "is any focus on" signal. | Pet only detects Sleep via Control Center scrape or the midnight-6am window. |
-| Accessibility | Reads Control Center for the active focus mode label. | Sleep is only detected via Focus boolean fallback or the time window. |
-| Full Disk Access | Most accurate: reads `~/Library/DoNotDisturb/DB/Assertions.json` directly. | Falls back to Control Center scrape when Control Center exposes the mode label. |
+| Focus | Fast fallback: a boolean "is any focus on" signal, used to put the pet to sleep when the mode name is unavailable. | Pet only detects Sleep via the named-mode sources below. |
+| Accessibility | Reads Control Center for the active focus mode label. | Sleep is still detected via Full Disk Access or the Focus boolean fallback. |
+| Full Disk Access | Most accurate: reads `~/Library/DoNotDisturb/DB/Assertions.json` directly. | Falls back to Control Center scrape or the Focus boolean fallback. |
 
 The Settings -> System Access section in the app shows live status of all three. Diagnose any "sleeping animation is not triggering" issue with:
 
@@ -67,7 +67,7 @@ log show --predicate 'subsystem == "com.petnative.focus"' --last 30s --info --de
 
 ## Cat Sounds Setup
 
-The app now supports 10 meow and 10 purr sounds that play randomly when you click the cat!
+The app loads up to 10 meow and 10 purr sounds that play randomly when you click the cat.
 
 ### Quick Setup
 
@@ -83,13 +83,18 @@ The app now supports 10 meow and 10 purr sounds that play randomly when you clic
    
 3. **Follow the prompts** to organize your files
 
-4. **Rebuild** in Xcode (Clean Build Folder, then Build)
+4. **Rebuild the app bundle**:
+   ```bash
+   ./tools/run.sh --clean
+   ```
 
 ### Files Needed
 
 Add these to `Sources/PetNative/Resources/Sounds/`:
-- `meow1.mp3` through `meow10.mp3` (10 meow sounds)
-- `purr1.mp3` through `purr10.mp3` (10 purr sounds)
+- `meow1.mp3` through `meow10.mp3`
+- `purr1.mp3` through `purr10.mp3` or `.wav`
+
+The repo currently includes 10 numbered meows, 5 numbered purrs, and `meow.mp3` as a fallback. Add the remaining numbered purrs if you want a fuller sound pool.
 
 ### More Help
 

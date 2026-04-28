@@ -25,4 +25,23 @@ enum PetTestSupport {
             .appendingPathComponent("PetNativeTests", isDirectory: true)
             .appendingPathComponent("\(name).json")
     }
+
+    @MainActor
+    static func waitUntil(
+        timeout: TimeInterval = 1,
+        pollInterval: TimeInterval = 0.01,
+        _ condition: () -> Bool
+    ) async -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+
+        while Date() < deadline {
+            if condition() {
+                return true
+            }
+
+            try? await Task.sleep(for: .seconds(pollInterval))
+        }
+
+        return condition()
+    }
 }

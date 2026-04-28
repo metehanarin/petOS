@@ -108,6 +108,11 @@ struct SettingsView: View {
     private var systemAccessSection: some View {
         Section("System Access") {
             permissionRow(
+                label: "Focus",
+                status: permissions.focusStatus,
+                pane: .focus
+            )
+            permissionRow(
                 label: "Accessibility",
                 status: permissions.accessibility,
                 pane: .accessibility
@@ -118,7 +123,7 @@ struct SettingsView: View {
                 pane: .fullDiskAccess
             )
 
-            Text("Sleep detection works best when both are granted. Without Full Disk Access, the app falls back to Control Center, which requires its panel to be visible.")
+            Text("Sleep detection works best when Focus and Full Disk Access are granted. Without Full Disk Access, the app falls back to Control Center, which requires Accessibility.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

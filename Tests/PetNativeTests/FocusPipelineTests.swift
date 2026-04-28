@@ -15,7 +15,7 @@ struct FocusPipelineTests {
     }
 
     @Test
-    func inFocusActiveWithNoDescriptorResolvesToUnidentifiedSleep() async {
+    func inFocusActiveWithNoDescriptorResolvesSleeping() async {
         let fake = FakeFocusSourceProvider()
         fake.inFocusResult = (authorized: true, isFocused: true)
         let (model, coord) = makeModelAndCoordinator(fake: fake)
@@ -27,6 +27,19 @@ struct FocusPipelineTests {
         let resolution = PetMoodEngine.resolveBaseMoodWithReason(for: model.worldState)
         #expect(resolution.mood == .sleeping)
         #expect(resolution.reason == .unidentifiedFocusAssumedSleep)
+    }
+
+    @Test
+    func doNotDisturbDescriptorResolvesSleeping() async {
+        let fake = FakeFocusSourceProvider()
+        fake.assertionsResult = FocusModeDescriptor(identifier: "com.apple.donotdisturb", name: "Do Not Disturb")
+        let (model, coord) = makeModelAndCoordinator(fake: fake)
+
+        await coord.refreshFocusForTest()
+
+        let resolution = PetMoodEngine.resolveBaseMoodWithReason(for: model.worldState)
+        #expect(resolution.mood == .sleeping)
+        #expect(resolution.reason == .doNotDisturbFocus)
     }
 
     @Test
@@ -87,6 +100,9 @@ struct FocusPipelineTests {
         await coord.refreshFocusForTest()
 
         #expect(model.worldState.focus.source == "protected-mode-status")
+        let resolution = PetMoodEngine.resolveBaseMoodWithReason(for: model.worldState)
+        #expect(resolution.mood == .sleeping)
+        #expect(resolution.reason == .unidentifiedFocusAssumedSleep)
     }
 
     private func makeModelAndCoordinator(fake: FakeFocusSourceProvider) -> (PetAppModel, PetMonitorCoordinator) {

@@ -41,7 +41,7 @@ final class PetAppModel: ObservableObject {
     private var reactionServer: ReactionServer?
     private var debugMoodOverride: PetMood?
     private var started = false
-    private let audioService = PetAudioService()
+    private lazy var audioService = PetAudioService()
     private lazy var gestureMonitor = PetGestureMonitor { [weak self] in
         self?.handleMeowGesture()
     }

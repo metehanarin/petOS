@@ -124,12 +124,23 @@ enum ControlCenterFocusSignalParser {
                 value.contains("focus sleep") ||
                 (value.contains("sleep") && (value.contains("selected") || value.contains("active") || value.contains("current") || value.contains("on")))
         }
-
-        guard hasSleepFocusSignal else {
-            return nil
+        let hasDoNotDisturbFocusSignal = normalizedValues.contains { value in
+            value.contains("do not disturb focus") ||
+                value.contains("focus do not disturb") ||
+                value.contains("dnd focus") ||
+                (value.contains("do not disturb") && (value.contains("selected") || value.contains("active") || value.contains("current") || value.contains("on"))) ||
+                (value.contains("dnd") && (value.contains("selected") || value.contains("active") || value.contains("current") || value.contains("on")))
         }
 
-        return FocusModeDescriptor(identifier: "com.apple.focus.sleep", name: "Sleep")
+        if hasSleepFocusSignal {
+            return FocusModeDescriptor(identifier: "com.apple.focus.sleep", name: "Sleep")
+        }
+
+        if hasDoNotDisturbFocusSignal {
+            return FocusModeDescriptor(identifier: "com.apple.donotdisturb", name: "Do Not Disturb")
+        }
+
+        return nil
     }
 
     private static func normalize(_ value: String) -> String {
@@ -171,7 +182,7 @@ enum FocusModeNameResolver {
     private static func extractActiveModeIdentifier(from root: Any) -> String? {
         var activeModeIdentifier: String?
 
-        walkJSONObject(root) { entry in
+        walkActiveAssertionsJSONObject(root) { entry in
             guard let dictionary = entry as? [String: Any] else {
                 return true
             }
@@ -197,6 +208,31 @@ enum FocusModeNameResolver {
         }
 
         return activeModeIdentifier
+    }
+
+    @discardableResult
+    private static func walkActiveAssertionsJSONObject(_ root: Any, visitor: (Any) -> Bool) -> Bool {
+        if !visitor(root) {
+            return false
+        }
+
+        if let array = root as? [Any] {
+            for value in array where !walkActiveAssertionsJSONObject(value, visitor: visitor) {
+                return false
+            }
+        } else if let dictionary = root as? [String: Any] {
+            for (key, value) in dictionary {
+                guard !key.localizedCaseInsensitiveContains("invalidation") else {
+                    continue
+                }
+
+                if !walkActiveAssertionsJSONObject(value, visitor: visitor) {
+                    return false
+                }
+            }
+        }
+
+        return true
     }
 
     private static func collectModeNames(from root: Any) -> [String: String] {

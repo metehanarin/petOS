@@ -8,11 +8,13 @@ enum PetMoodEngine {
 
     enum Reason: String, CaseIterable {
         case sleepFocusExplicit = "sleep_focus_explicit"
+        case doNotDisturbFocus = "do_not_disturb_focus"
         case sleepWindow = "sleep_window"
         case unidentifiedFocusAssumedSleep = "unidentified_focus_assumed_sleep"
         case workFocus = "work_focus"
         case productivityApp = "productivity_app"
         case focusWithTopApp = "focus_with_top_app"
+        case attentionApp = "attention_app"
         case imminentCalendar = "imminent_calendar"
         case notificationAlert = "notification_alert"
         case sickCPU = "sick_cpu"
@@ -29,30 +31,36 @@ enum PetMoodEngine {
     static func resolveBaseMoodWithReason(for state: WorldState, now: Date = .now) -> MoodResolution {
         let topAppFrontmost = isTopAppFrontmost(state.activity)
         let productivityAppFrontmost = isProductivityApp(state.activity.frontApp)
+        let attentionAppFrontmost = isAttentionApp(state.activity.frontApp)
         let sleepFocusActive = isFocusMode(
             state.focus,
-            identifier: "com.apple.focus.sleep",
+            identifiers: sleepFocusIdentifiers,
             fallbackNames: ["sleep", "sleeping"]
+        )
+        let doNotDisturbFocusActive = isFocusMode(
+            state.focus,
+            identifiers: doNotDisturbFocusIdentifiers,
+            fallbackNames: ["do not disturb", "dnd"]
         )
         let workFocusActive = state.focus.active &&
             isFocusMode(
                 state.focus,
-                identifier: "com.apple.focus.work",
+                identifiers: ["com.apple.focus.work"],
                 fallbackNames: ["work", "working"]
             )
         let sleepModeActive = state.focus.active && sleepFocusActive
-        let sleepWindowActive = isSleepWindow(hour: state.hour)
-        let unidentifiedSleepFocus = isUnidentifiedFocusAssumedAsSleep(state.focus)
+        let doNotDisturbModeActive = state.focus.active && doNotDisturbFocusActive
+        let unidentifiedFocusAssumedSleep = isUnidentifiedFocusAssumedAsSleep(state.focus)
 
         if sleepModeActive {
             return MoodResolution(mood: .sleeping, reason: .sleepFocusExplicit)
         }
 
-        if sleepWindowActive {
-            return MoodResolution(mood: .sleeping, reason: .sleepWindow)
+        if doNotDisturbModeActive {
+            return MoodResolution(mood: .sleeping, reason: .doNotDisturbFocus)
         }
 
-        if unidentifiedSleepFocus {
+        if unidentifiedFocusAssumedSleep {
             return MoodResolution(mood: .sleeping, reason: .unidentifiedFocusAssumedSleep)
         }
 
@@ -76,7 +84,11 @@ enum PetMoodEngine {
             return MoodResolution(mood: .alert, reason: .notificationAlert)
         }
 
-        if workFocusActive {
+        if attentionAppFrontmost {
+            return MoodResolution(mood: .alert, reason: .attentionApp)
+        }
+
+        if workFocusActive && canFocusAppTriggerWorking(state.activity.frontApp) {
             return MoodResolution(mood: .working, reason: .workFocus)
         }
 
@@ -84,7 +96,7 @@ enum PetMoodEngine {
             return MoodResolution(mood: .working, reason: .productivityApp)
         }
 
-        if state.focus.active && topAppFrontmost {
+        if state.focus.active && topAppFrontmost && canTopAppTriggerWorking(state.activity.frontApp) {
             return MoodResolution(mood: .working, reason: .focusWithTopApp)
         }
 
@@ -136,6 +148,25 @@ enum PetMoodEngine {
         "notion",
         "obsidian",
         "ulysses",
+        "chatgpt",
+        "claude",
+        "claude by anthropic",
+        "google gemini",
+        "gemini",
+        "perplexity",
+        "perplexity: ask anything",
+        "microsoft copilot",
+        "microsoft 365",
+        "microsoft 365 copilot",
+        "copilot",
+        "grammarly",
+        "grammarly: ai writing app",
+        "goodnotes",
+        "goodnotes: ai notes, docs, pdf",
+        "notability",
+        "notability: ai notes & pdf app",
+        "pdf reader",
+        "pdf reader: pdf editor,convert",
         "intellij idea",
         "pycharm",
         "webstorm",
@@ -153,6 +184,14 @@ enum PetMoodEngine {
         "excel",
         "microsoft powerpoint",
         "powerpoint",
+        "microsoft onenote",
+        "onenote",
+        "google docs",
+        "docs",
+        "google sheets",
+        "sheets",
+        "google slides",
+        "slides",
         "pages",
         "numbers",
         "keynote"
@@ -171,6 +210,17 @@ enum PetMoodEngine {
         "adobe after effects",
         "adobe audition",
         "adobe acrobat",
+        "chatgpt",
+        "claude",
+        "google gemini",
+        "gemini",
+        "perplexity",
+        "microsoft copilot",
+        "microsoft 365",
+        "grammarly",
+        "goodnotes",
+        "notability",
+        "pdf reader",
         "davinci resolve",
         "ableton live",
         "pro tools",
@@ -188,7 +238,74 @@ enum PetMoodEngine {
         "fleet"
     ]
 
-    private static let nonSleepFocusIdentifiers: Set<String> = [
+    private static let musicAppNames: Set<String> = [
+        "music",
+        "spotify",
+        "youtube music",
+        "tidal",
+        "deezer",
+        "amazon music",
+        "soundcloud"
+    ]
+
+    private static let attentionAppNames: Set<String> = [
+        "calendar",
+        "fantastical",
+        "google calendar",
+        "mail",
+        "apple mail",
+        "gmail",
+        "mail for gmail",
+        "mail+ for gmail",
+        "microsoft outlook",
+        "outlook",
+        "yahoo mail",
+        "messages",
+        "facetime",
+        "slack",
+        "microsoft teams",
+        "teams",
+        "zoom",
+        "zoom.us",
+        "discord",
+        "whatsapp",
+        "telegram",
+        "signal"
+    ]
+
+    private static let passiveAppNames: Set<String> = [
+        "finder",
+        "desktop",
+        "launchpad",
+        "mission control",
+        "system settings",
+        "system preferences",
+        "settings",
+        "app store",
+        "google drive",
+        "drive",
+        "microsoft onedrive",
+        "onedrive",
+        "quicktime player",
+        "preview",
+        "image capture",
+        "photos"
+    ]
+
+    private static let sleepFocusIdentifiers: Set<String> = [
+        "com.apple.focus.sleep",
+        "com.apple.donotdisturb.mode.sleep",
+        "com.apple.sleep.sleep-mode"
+    ]
+
+    private static let doNotDisturbFocusIdentifiers: Set<String> = [
+        "com.apple.donotdisturb",
+        "com.apple.donotdisturb.mode.default",
+        "com.apple.focus.do-not-disturb",
+        "com.apple.focus.donotdisturb"
+    ]
+
+    private static let knownNonSleepFocusIdentifiers: Set<String> = [
         "com.apple.focus.work",
         "com.apple.focus.personal",
         "com.apple.focus.gaming",
@@ -196,19 +313,16 @@ enum PetMoodEngine {
         "com.apple.focus.mindfulness",
         "com.apple.focus.driving",
         "com.apple.donotdisturb.mode.driving",
-        "com.apple.focus.reading",
-        "com.apple.donotdisturb"
+        "com.apple.focus.reading"
     ]
 
-    private static let nonSleepFocusNames: Set<String> = [
-        "work", "working",
-        "personal",
-        "gaming",
-        "fitness",
-        "mindfulness",
-        "driving",
-        "reading",
-        "do not disturb", "dnd"
+    private static let knownFocusIdentifiers: Set<String> = sleepFocusIdentifiers
+        .union(doNotDisturbFocusIdentifiers)
+        .union(knownNonSleepFocusIdentifiers)
+
+    private static let focusStatusOnlySources: Set<String> = [
+        "status",
+        "protected-mode-status"
     ]
 
     static func reactionVariant(for event: PetEvent) -> ReactionVariant {
@@ -248,6 +362,29 @@ enum PetMoodEngine {
         }
     }
 
+    private static func isMusicApp(_ appName: String) -> Bool {
+        musicAppNames.contains(normalizeAppName(appName))
+    }
+
+    private static func isAttentionApp(_ appName: String) -> Bool {
+        attentionAppNames.contains(normalizeAppName(appName))
+    }
+
+    private static func canTopAppTriggerWorking(_ appName: String) -> Bool {
+        canFocusAppTriggerWorking(appName)
+    }
+
+    private static func canFocusAppTriggerWorking(_ appName: String) -> Bool {
+        let normalizedAppName = normalizeAppName(appName)
+        guard !normalizedAppName.isEmpty else {
+            return false
+        }
+
+        return !musicAppNames.contains(normalizedAppName) &&
+            !attentionAppNames.contains(normalizedAppName) &&
+            !passiveAppNames.contains(normalizedAppName)
+    }
+
     private static func hasImminentCalendarEvent(_ calendar: CalendarState) -> Bool {
         guard let minutesAway = calendar.nextEvent?.minutesAway else {
             return false
@@ -264,28 +401,23 @@ enum PetMoodEngine {
         return alertUntil > now
     }
 
-    private static func isSleepWindow(hour: Int) -> Bool {
-        (0 ..< 6).contains(hour)
-    }
-
     private static func isUnidentifiedFocusAssumedAsSleep(_ focus: FocusState) -> Bool {
-        guard focus.active else { return false }
-        let identifier = normalizeFocusModeIdentifier(focus.modeIdentifier)
-        let name = normalizeFocusModeName(focus.modeName)
+        guard focus.active, focusStatusOnlySources.contains(focus.source) else {
+            return false
+        }
 
-        if nonSleepFocusIdentifiers.contains(identifier) {
-            return false
-        }
-        if nonSleepFocusNames.contains(name) {
-            return false
-        }
-        return true
+        return normalizeFocusModeIdentifier(focus.modeIdentifier).isEmpty &&
+            normalizeFocusModeName(focus.modeName).isEmpty
     }
 
-    private static func isFocusMode(_ focus: FocusState, identifier: String, fallbackNames: Set<String>) -> Bool {
+    private static func isFocusMode(_ focus: FocusState, identifiers: Set<String>, fallbackNames: Set<String>) -> Bool {
         let normalizedIdentifier = normalizeFocusModeIdentifier(focus.modeIdentifier)
-        if !normalizedIdentifier.isEmpty {
-            return normalizedIdentifier == identifier
+        if identifiers.contains(normalizedIdentifier) {
+            return true
+        }
+
+        if knownFocusIdentifiers.contains(normalizedIdentifier) {
+            return false
         }
 
         return fallbackNames.contains(normalizeFocusModeName(focus.modeName))

@@ -561,7 +561,7 @@ final class PetMonitorCoordinator {
         if let descriptor {
             focusLog.debug("controlcenter.scrape.ok mode_id=\(descriptor.identifier, privacy: .private) mode_name=\(descriptor.name ?? "", privacy: .private)")
         } else {
-            focusLog.debug("controlcenter.scrape.empty (no sleep label found)")
+            focusLog.debug("controlcenter.scrape.empty (no sleep or dnd label found)")
         }
         return descriptor
     }
@@ -620,8 +620,8 @@ final class PetMonitorCoordinator {
         }
 
         var strings = elementStrings
-        if isAccessibilityElementSelected(element), let selectedSleepLabel = selectedSleepFocusLabel(from: elementStrings) {
-            strings.append(selectedSleepLabel)
+        if isAccessibilityElementSelected(element), let selectedFocusLabel = selectedFocusLabel(from: elementStrings) {
+            strings.append(selectedFocusLabel)
         }
 
         guard remainingDepth > 0 else {
@@ -657,14 +657,23 @@ final class PetMonitorCoordinator {
         return (value as? Bool) == true || (value as? NSNumber)?.boolValue == true
     }
 
-    private func selectedSleepFocusLabel(from strings: [String]) -> String? {
-        let hasSleepLabel = strings
+    private func selectedFocusLabel(from strings: [String]) -> String? {
+        let normalizedValues = strings
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
-            .contains { value in
-                value == "sleep" || value.contains("sleep focus")
-            }
+        let hasSleepLabel = normalizedValues.contains { value in
+            value == "sleep" || value.contains("sleep focus")
+        }
+        let hasDoNotDisturbLabel = normalizedValues.contains { value in
+            value == "do not disturb" || value == "dnd" || value.contains("do not disturb focus") || value.contains("dnd focus")
+        }
 
-        return hasSleepLabel ? "selected sleep focus" : nil
+        if hasSleepLabel {
+            return "selected sleep focus"
+        }
+        if hasDoNotDisturbLabel {
+            return "selected do not disturb focus"
+        }
+        return nil
     }
 
     private func appendAccessibilityStrings(from value: AnyObject, to strings: inout [String]) {
@@ -802,12 +811,16 @@ final class NotificationLogMonitor: @unchecked Sendable {
         stderrHandle = stderrPipe.fileHandleForReading
 
         stdoutPipe.fileHandleForReading.readabilityHandler = { [weak self] handle in
+            guard let monitor = self else {
+                return
+            }
+
             let data = handle.availableData
             guard !data.isEmpty else {
                 return
             }
-            self?.queue.async {
-                self?.consume(data)
+            monitor.queue.async { [monitor] in
+                monitor.consume(data)
             }
         }
 
@@ -823,8 +836,12 @@ final class NotificationLogMonitor: @unchecked Sendable {
         }
 
         process.terminationHandler = { [weak self] _ in
-            self?.queue.async {
-                self?.scheduleRestart()
+            guard let monitor = self else {
+                return
+            }
+
+            monitor.queue.async { [monitor] in
+                monitor.scheduleRestart()
             }
         }
 
@@ -917,4 +934,3 @@ final class NotificationLogMonitor: @unchecked Sendable {
         DispatchQueue.main.asyncAfter(deadline: .now() + AppConstants.notificationMonitorRestartDelay, execute: workItem)
     }
 }
-

@@ -83,7 +83,34 @@ struct PetAppModelTests {
 
     @MainActor
     @Test
-    func midnightTimeUpdateImmediatelyChangesCurrentMood() {
+    func descriptorlessActiveFocusUpdateChangesCurrentMoodToSleeping() {
+        let persistence = PetPersistence(fileURL: PetTestSupport.temporaryFileURL())
+        let model = PetAppModel(arguments: [], persistence: persistence)
+
+        model.updateWorldState { state in
+            state.hour = 14
+            state.focus = .default
+            state.music.playing = true
+        }
+
+        #expect(model.currentMood == .dancing)
+
+        model.updateWorldState { state in
+            state.focus = FocusState(
+                active: true,
+                authorized: true,
+                modeIdentifier: nil,
+                modeName: nil,
+                source: "status"
+            )
+        }
+
+        #expect(model.currentMood == .sleeping)
+    }
+
+    @MainActor
+    @Test
+    func midnightTimeUpdateDoesNotTriggerSleepingWithoutFocusMode() {
         let persistence = PetPersistence(fileURL: PetTestSupport.temporaryFileURL())
         let model = PetAppModel(arguments: [], persistence: persistence)
         let midnight = Calendar.current.startOfDay(for: Date(timeIntervalSince1970: 1_777_777_777))
@@ -99,7 +126,7 @@ struct PetAppModelTests {
         model.updateTimeOfDay(now: midnight)
 
         #expect(model.worldState.hour == 0)
-        #expect(model.currentMood == .sleeping)
+        #expect(model.currentMood == .dancing)
     }
 
     @MainActor
@@ -118,7 +145,9 @@ struct PetAppModelTests {
         #expect(model.notificationToken != nil)
         #expect(model.worldState.notifications.source == "usernoted-delivered")
 
-        try? await Task.sleep(for: .milliseconds(120))
-        #expect(model.worldState.notifications.alertUntil == nil)
+        let didClearAlert = await PetTestSupport.waitUntil {
+            model.worldState.notifications.alertUntil == nil
+        }
+        #expect(didClearAlert)
     }
 }
